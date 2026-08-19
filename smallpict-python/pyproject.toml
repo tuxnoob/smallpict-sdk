@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "smallpict"
+version = "1.0.0.dev1"
+description = "Official Python SDK for SmallPict Image Optimization API"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "SmallPict Engineering", email = "support@tuxnoob.com" }
+]
+requires-python = ">=3.8"
+dependencies = [
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+pil = ["Pillow>=9.0.0"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-httpx>=0.22.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://smallpict.tuxnoob.com"
+Repository = "https://github.com/tuxnoob/smallpict-python"
+Documentation = "https://smallpict.tuxnoob.com/docs/sdks/python"
