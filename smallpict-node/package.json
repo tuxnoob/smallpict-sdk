@@ -1,6 +1,6 @@
 {
   "name": "@smallpict/sdk",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0",
   "description": "Official TypeScript & Node.js SDK for SmallPict Image Optimization API",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -8,36 +8,59 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "build": "tsup",
     "test": "vitest run",
-    "lint": "eslint src/**",
-    "typecheck": "tsc --noEmit"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "keywords": [
     "smallpict",
     "image-optimization",
+    "image-compression",
     "webp",
     "avif",
-    "image-compression",
-    "cdn"
+    "cdn",
+    "performance"
   ],
   "author": "SmallPict Engineering <support@tuxnoob.com>",
   "license": "MIT",
+  "homepage": "https://smallpict.tuxnoob.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/tuxnoob/smallpict-node.git"
   },
+  "bugs": {
+    "url": "https://github.com/tuxnoob/smallpict-node/issues"
+  },
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
