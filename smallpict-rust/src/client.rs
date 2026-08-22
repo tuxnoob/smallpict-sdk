@@ -1,0 +1,498 @@
+use crate::crypto::{self, EMPTY_SHA256};
+use crate::errors::{SecretRedacted, SmallPictError};
+use crate::models::{
+    FallbackMode, JobStatusResult, OptimizeOptions, OptimizeResult, PurgeResponse, PurgeType,
+    QuotaResponse,
+};
+use bytes::Bytes;
+use rand::Rng;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue, ACCEPT, CONTENT_TYPE};
+use serde_json::Value;
+use std::env;
+use std::path::Path;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
+
+/// Asynchronous client for interacting with the SmallPict API.
+#[derive(Clone, Debug)]
+pub struct Client {
+    pub(crate) api_key: SecretRedacted<String>,
+    pub(crate) secret_key: Option<SecretRedacted<String>>,
+    pub(crate) base_url: String,
+    pub(crate) timeout: Duration,
+    pub(crate) max_retries: u32,
+    pub(crate) fallback_mode: FallbackMode,
+    pub(crate) http_client: reqwest::Client,
+}
+
+impl Client {
+    /// Create a new Client using an API key and default options.
+    pub fn new(api_key: impl Into<String>) -> Result<Self, SmallPictError> {
+        ClientBuilder::new().api_key(api_key).build()
+    }
+
+    /// Obtain a [`ClientBuilder`] to configure client options.
+    pub fn builder() -> ClientBuilder {
+        ClientBuilder::new()
+    }
+
+    /// Optimizes raw in-memory image bytes.
+    pub async fn optimize(
+        &self,
+        data: &[u8],
+        options: Option<OptimizeOptions>,
+    ) -> Result<OptimizeResult, SmallPictError> {
+        let opts = options.unwrap_or_default();
+        let filename = opts.filename.clone().unwrap_or_else(|| "image.jpg".into());
+        let mime_type = opts.mime_type.clone().unwrap_or_else(|| "image/jpeg".into());
+
+        let payload = serde_json::json!({
+            "filename": filename,
+            "mime_type": mime_type,
+            "filesize": data.len(),
+            "options": serde_json::to_value(&opts).map_err(SmallPictError::from)?,
+        });
+
+        match self
+            .request(
+                reqwest::Method::POST,
+                "/v1/optimize",
+                Some(payload),
+                opts.idempotency_key.as_deref(),
+            )
+            .await
+        {
+            Ok(val) => {
+                let orig_size = val
+                    .get("original_size")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(data.len() as u64);
+                let comp_size = val
+                    .get("compressed_size")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(orig_size);
+                let saved = val
+                    .get("bytes_saved")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or_else(|| orig_size.saturating_sub(comp_size));
+                let savings_pct = val
+                    .get("savings_percentage")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or_else(|| {
+                        if orig_size > 0 {
+                            ((saved as f64 / orig_size as f64) * 100.0 * 100.0).round() / 100.0
+                        } else {
+                            0.0
+                        }
+                    });
+
+                Ok(OptimizeResult {
+                    job_id: val
+                        .get("job_id")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("sync")
+                        .to_string(),
+                    status: val
+                        .get("status")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("completed")
+                        .to_string(),
+                    url: val
+                        .get("url")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or_default()
+                        .to_string(),
+                    format: val
+                        .get("format")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("auto")
+                        .to_string(),
+                    original_size: orig_size,
+                    compressed_size: comp_size,
+                    bytes_saved: saved,
+                    savings_percentage: savings_pct,
+                    upload_url: val
+                        .get("upload_url")
+                        .and_then(|v| v.as_str())
+                        .map(ToString::to_string),
+                    data: None,
+                })
+            }
+            Err(e) => {
+                if e.is_quota_exceeded() && self.fallback_mode == FallbackMode::Passthrough {
+                    let format_str = mime_type.trim_start_matches("image/").to_string();
+                    return Ok(OptimizeResult {
+                        job_id: "fallback-passthrough".to_string(),
+                        status: "completed".to_string(),
+                        url: String::new(),
+                        format: format_str,
+                        original_size: data.len() as u64,
+                        compressed_size: data.len() as u64,
+                        bytes_saved: 0,
+                        savings_percentage: 0.0,
+                        upload_url: None,
+                        data: Some(data.to_vec()),
+                    });
+                }
+                Err(e)
+            }
+        }
+    }
+
+    /// Reads an image from local disk and performs optimization.
+    pub async fn optimize_file(
+        &self,
+        path: impl AsRef<Path>,
+        options: Option<OptimizeOptions>,
+    ) -> Result<OptimizeResult, SmallPictError> {
+        let path = path.as_ref();
+        let bytes = tokio::fs::read(path).await?;
+
+        let mut opts = options.unwrap_or_default();
+        if opts.filename.is_none() {
+            if let Some(file_stem) = path.file_name().and_then(|s| s.to_str()) {
+                opts.filename = Some(file_stem.to_string());
+            }
+        }
+
+        self.optimize(&bytes, Some(opts)).await
+    }
+
+    /// Retrieves real-time account quota usage and egress metrics.
+    pub async fn get_quota(&self) -> Result<QuotaResponse, SmallPictError> {
+        let val = self.request(reqwest::Method::GET, "/v1/quota", None, None).await?;
+        serde_json::from_value(val).map_err(SmallPictError::from)
+    }
+
+    /// Invalidates cached assets across global Edge CDN nodes.
+    pub async fn purge_cdn(
+        &self,
+        urls: &[impl AsRef<str>],
+        purge_type: PurgeType,
+    ) -> Result<PurgeResponse, SmallPictError> {
+        let url_list: Vec<String> = urls.iter().map(|u| u.as_ref().to_string()).collect();
+        let payload = serde_json::json!({
+            "purge_type": purge_type.to_string(),
+            "urls": url_list,
+        });
+
+        let val = self
+            .request(reqwest::Method::POST, "/v1/purge", Some(payload), None)
+            .await?;
+        serde_json::from_value(val).map_err(SmallPictError::from)
+    }
+
+    /// Verifies if the configured API key is valid.
+    pub async fn validate_key(&self) -> bool {
+        self.get_quota().await.is_ok()
+    }
+
+    /// Polls current progress of an asynchronous image conversion task.
+    pub async fn get_job_status(&self, job_id: &str) -> Result<JobStatusResult, SmallPictError> {
+        if job_id.is_empty() {
+            return Err(SmallPictError::Validation {
+                message: "job_id is required".into(),
+                details: None,
+            });
+        }
+
+        let path = format!("/v1/optimize/status?job_id={}", urlencoding::encode(job_id));
+        let val = self.request(reqwest::Method::GET, &path, None, None).await?;
+        serde_json::from_value(val).map_err(SmallPictError::from)
+    }
+
+    pub(crate) async fn request(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        payload: Option<Value>,
+        idempotency_key: Option<&str>,
+    ) -> Result<Value, SmallPictError> {
+        let clean_path = if path.starts_with('/') {
+            path.to_string()
+        } else {
+            format!("/{}", path)
+        };
+        let normalized_path = if !clean_path.starts_with("/v1/") && !clean_path.starts_with("/v2/") {
+            format!("/v1{}", clean_path)
+        } else {
+            clean_path
+        };
+
+        let url = format!("{}{}", self.base_url, normalized_path);
+
+        let (body_bytes, body_hash) = if let Some(ref json_val) = payload {
+            let bytes = serde_json::to_vec(json_val).map_err(SmallPictError::from)?;
+            let hash = crypto::sha256_hex(&bytes);
+            (Some(Bytes::from(bytes)), hash)
+        } else {
+            (None, EMPTY_SHA256.to_string())
+        };
+
+        let mut attempt = 0;
+        let base_delay = Duration::from_millis(250);
+
+        while attempt <= self.max_retries {
+            attempt += 1;
+
+            let now_sec = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+                .to_string();
+
+            let mut headers = HeaderMap::new();
+            headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+            headers.insert(
+                HeaderName::from_static("x-api-key"),
+                HeaderValue::from_str(&self.api_key.0)
+                    .map_err(|_| SmallPictError::Validation {
+                        message: "Invalid characters in API key".into(),
+                        details: None,
+                    })?,
+            );
+
+            if body_bytes.is_some() {
+                headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+            }
+
+            if let Some(ref sec) = self.secret_key {
+                let string_to_sign = crypto::build_string_to_sign(
+                    method.as_str(),
+                    &normalized_path,
+                    &now_sec,
+                    &body_hash,
+                );
+                let signature = crypto::hmac_sha256_hex(&sec.0, &string_to_sign);
+
+                headers.insert(
+                    HeaderName::from_static("x-timestamp"),
+                    HeaderValue::from_str(&now_sec).expect("valid ascii"),
+                );
+                headers.insert(
+                    HeaderName::from_static("x-signature"),
+                    HeaderValue::from_str(&signature).expect("valid ascii"),
+                );
+            } else {
+                headers.insert(
+                    reqwest::header::AUTHORIZATION,
+                    HeaderValue::from_str(&format!("Bearer {}", self.api_key.0))
+                        .map_err(|_| SmallPictError::Validation {
+                            message: "Invalid characters in API key".into(),
+                            details: None,
+                        })?,
+                );
+            }
+
+            if matches!(
+                method,
+                reqwest::Method::POST | reqwest::Method::PATCH | reqwest::Method::DELETE
+            ) {
+                let idemp = idempotency_key
+                    .map(ToString::to_string)
+                    .unwrap_or_else(|| Uuid::new_v4().to_string());
+                headers.insert(
+                    HeaderName::from_static("idempotency-key"),
+                    HeaderValue::from_str(&idemp).expect("valid uuid"),
+                );
+            }
+
+            let mut req = self
+                .http_client
+                .request(method.clone(), &url)
+                .headers(headers)
+                .timeout(self.timeout);
+
+            if let Some(ref b) = body_bytes {
+                req = req.body(b.clone());
+            }
+
+            let resp = match req.send().await {
+                Ok(r) => r,
+                Err(e) => {
+                    if attempt <= self.max_retries {
+                        let delay = base_delay * (1 << (attempt - 1));
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Err(SmallPictError::Network { source: e });
+                }
+            };
+
+            let status = resp.status();
+            let req_id = resp
+                .headers()
+                .get("x-request-id")
+                .and_then(|v| v.to_str().ok())
+                .map(ToString::to_string);
+            let retry_after = resp
+                .headers()
+                .get("retry-after")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|s| s.parse::<u64>().ok());
+
+            if (status == reqwest::StatusCode::TOO_MANY_REQUESTS
+                || (status.is_server_error() && status.as_u16() <= 504))
+                && attempt <= self.max_retries
+            {
+                let mut delay = base_delay * (1 << (attempt - 1));
+                if let Some(sec) = retry_after {
+                    delay = Duration::from_secs(sec);
+                }
+                let jitter = Duration::from_millis(rand::thread_rng().gen_range(0..100));
+                tokio::time::sleep(delay + jitter).await;
+                continue;
+            }
+
+            let resp_bytes = resp.bytes().await.map_err(SmallPictError::from)?;
+            let parsed_json: Result<Value, _> = serde_json::from_slice(&resp_bytes);
+
+            if !status.is_success() {
+                let mut message = format!("API request failed with HTTP {}", status.as_u16());
+                let mut details = None;
+
+                if let Ok(ref val) = parsed_json {
+                    if let Some(err_obj) = val.get("error") {
+                        if let Some(m) = err_obj.get("message").and_then(|v| v.as_str()) {
+                            message = m.to_string();
+                        }
+                        if let Some(d) = err_obj.get("details") {
+                            details = Some(d.clone());
+                        }
+                    } else if let Some(m) = val.get("message").and_then(|v| v.as_str()) {
+                        message = m.to_string();
+                    }
+                }
+
+                return match status.as_u16() {
+                    400 => Err(SmallPictError::Validation { message, details }),
+                    401 => Err(SmallPictError::Unauthorized {
+                        message,
+                        request_id: req_id,
+                    }),
+                    402 => Err(SmallPictError::QuotaExceeded {
+                        message,
+                        request_id: req_id,
+                    }),
+                    403 => Err(SmallPictError::Forbidden {
+                        message,
+                        request_id: req_id,
+                    }),
+                    404 => Err(SmallPictError::NotFound {
+                        message,
+                        request_id: req_id,
+                    }),
+                    429 => Err(SmallPictError::RateLimit {
+                        message,
+                        retry_after,
+                        request_id: req_id,
+                    }),
+                    _ => Err(SmallPictError::Server {
+                        status: status.as_u16(),
+                        message,
+                        request_id: req_id,
+                    }),
+                };
+            }
+
+            return parsed_json.map_err(SmallPictError::from);
+        }
+
+        Err(SmallPictError::Timeout {
+            message: "Request failed after maximum retries".into(),
+        })
+    }
+}
+
+/// Builder pattern for configuring and instantiating a [`Client`].
+#[derive(Debug, Clone)]
+pub struct ClientBuilder {
+    api_key: Option<String>,
+    secret_key: Option<String>,
+    base_url: Option<String>,
+    timeout: Duration,
+    max_retries: u32,
+    fallback_mode: FallbackMode,
+}
+
+impl Default for ClientBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ClientBuilder {
+    pub fn new() -> Self {
+        Self {
+            api_key: env::var("SMALLPICT_API_KEY").ok(),
+            secret_key: env::var("SMALLPICT_SECRET_KEY").ok(),
+            base_url: env::var("SMALLPICT_BASE_URL").ok(),
+            timeout: Duration::from_secs(30),
+            max_retries: 3,
+            fallback_mode: FallbackMode::Throw,
+        }
+    }
+
+    pub fn api_key(mut self, key: impl Into<String>) -> Self {
+        self.api_key = Some(key.into());
+        self
+    }
+
+    pub fn secret_key(mut self, secret: impl Into<String>) -> Self {
+        self.secret_key = Some(secret.into());
+        self
+    }
+
+    pub fn base_url(mut self, url: impl Into<String>) -> Self {
+        self.base_url = Some(url.into().trim_end_matches('/').to_string());
+        self
+    }
+
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    pub fn max_retries(mut self, retries: u32) -> Self {
+        self.max_retries = retries;
+        self
+    }
+
+    pub fn fallback_mode(mut self, mode: FallbackMode) -> Self {
+        self.fallback_mode = mode;
+        self
+    }
+
+    pub fn build(self) -> Result<Client, SmallPictError> {
+        let key = self.api_key.ok_or_else(|| SmallPictError::Validation {
+            message: "Missing required SmallPict API key. Provide `.api_key(...)` or set SMALLPICT_API_KEY environment variable.".into(),
+            details: None,
+        })?;
+
+        if key.trim().is_empty() {
+            return Err(SmallPictError::Validation {
+                message: "API key cannot be empty".into(),
+                details: None,
+            });
+        }
+
+        let base = self
+            .base_url
+            .unwrap_or_else(|| "https://api.tuxnoob.com".to_string());
+
+        let http_client = reqwest::Client::builder()
+            .timeout(self.timeout)
+            .build()
+            .map_err(SmallPictError::from)?;
+
+        Ok(Client {
+            api_key: SecretRedacted(key),
+            secret_key: self.secret_key.map(SecretRedacted),
+            base_url: base,
+            timeout: self.timeout,
+            max_retries: self.max_retries,
+            fallback_mode: self.fallback_mode,
+            http_client,
+        })
+    }
+}

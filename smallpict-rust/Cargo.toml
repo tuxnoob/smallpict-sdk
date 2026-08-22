@@ -1,19 +1,27 @@
 [package]
 name = "smallpict"
-version = "0.1.0-alpha.1"
+version = "1.0.0"
 edition = "2021"
-description = "Official asynchronous Rust SDK for SmallPict Image Optimization API"
+rust-version = "1.75.0"
+description = "Official Rust SDK for SmallPict Image Optimization API — next-gen compression (AVIF, WebP), Edge CDN delivery, and cache purging."
 license = "MIT"
 repository = "https://github.com/tuxnoob/smallpict-rust"
 homepage = "https://smallpict.tuxnoob.com"
 documentation = "https://docs.rs/smallpict"
 readme = "README.md"
 keywords = ["smallpict", "image-optimization", "webp", "avif", "compression"]
-categories = ["web-programming::http-client", "multimedia::images"]
+categories = ["web-programming::http-client", "multimedia::images", "api-bindings"]
+
+[features]
+default = ["async", "rustls-tls"]
+async = ["tokio", "reqwest/rustls-tls"]
+blocking = ["reqwest/blocking", "reqwest/rustls-tls"]
+rustls-tls = ["reqwest/rustls-tls"]
+native-tls = ["reqwest/default-tls"]
 
 [dependencies]
 reqwest = { version = "0.11", default-features = false, features = ["json", "stream"] }
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "time", "fs"], optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
@@ -21,12 +29,10 @@ bytes = "1.0"
 hex = "0.4"
 hmac = "0.12"
 sha2 = "0.10"
-
-[features]
-default = ["default-tls"]
-default-tls = ["reqwest/default-tls"]
-rustls-tls = ["reqwest/rustls-tls"]
+uuid = { version = "1.0", features = ["v4"] }
+regex = "1.10"
+rand = "0.8"
+urlencoding = "2.1"
 
 [dev-dependencies]
-wiremock = "0.5"
-tokio-test = "0.4"
+tokio = { version = "1.0", features = ["full"] }
