@@ -1,0 +1,17 @@
+name: Publish smallpict/smallpict-php to Packagist
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  notify-packagist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Packagist Webhook
+        run: |
+          curl -s -XPOST \
+            -H'Content-Type:application/json' \
+            "https://packagist.org/api/update-package?username=${{ secrets.PACKAGIST_USERNAME }}&apiToken=${{ secrets.PACKAGIST_TOKEN }}" \
+            -d'{"repository":{"url":"https://github.com/tuxnoob/smallpict-php"}}'
