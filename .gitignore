@@ -1,18 +1,69 @@
+# OS & Editor
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Node.js
 node_modules/
 dist/
 build/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
 *.pyc
 __pycache__/
 .venv/
+env/
+venv/
+*.egg-info/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# PHP / Composer
 vendor/
+.phpunit.cache/
+.phpunit.result.cache
+composer.phar
+
+# Go
+*.exe
+*.test
+*.out
+
+# Rust / Cargo
 target/
+**/*.rs.bk
+
+# Ruby
 .bundle/
 *.gem
+coverage/
+pkg/
+
+# Java / Maven / Gradle
 *.class
 *.jar
+*.war
 .gradle/
-.idea/
-.vscode/
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup

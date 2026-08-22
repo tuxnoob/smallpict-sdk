@@ -2,7 +2,7 @@
 # ==============================================================================
 # SmallPict SDK Parent Contract Verification & Quality Audit Script
 # Validates that all 7 official SDK repositories strictly adhere to OpenAPI 3.1.0,
-# contain required standard documentation, security policies, and CI workflows.
+# contain standard documentation, security policies, and centralized workflows.
 # ==============================================================================
 set -euo pipefail
 
@@ -14,6 +14,7 @@ echo "=================================================="
 echo "  SmallPict Master SDK Contract Audit (Phase 4)   "
 echo "=================================================="
 
+# 1. Check OpenAPI specification
 if [ -f "${OPENAPI_SPEC}" ]; then
   echo "✅ Master OpenAPI 3.1.0 Spec: ${OPENAPI_SPEC}"
 else
@@ -21,7 +22,18 @@ else
   exit 1
 fi
 
-REQUIRED_DOCS=("LICENSE" "SECURITY.md" "CHANGELOG.md" "README.md" ".github/workflows/ci.yml" ".github/workflows/release.yml")
+# 2. Check centralized GitHub Actions workflows
+CENTRAL_WORKFLOWS=(".github/workflows/ci.yml" ".github/workflows/release.yml")
+for wf in "${CENTRAL_WORKFLOWS[@]}"; do
+  if [ -f "${ROOT_DIR}/${wf}" ]; then
+    echo "✅ Centralized Workflow: ${wf}"
+  else
+    echo "❌ Missing Centralized Workflow: ${wf}"
+    exit 1
+  fi
+done
+
+REQUIRED_DOCS=("LICENSE" "SECURITY.md" "CHANGELOG.md" "README.md")
 
 SDKS=(
   "smallpict-node:npm:@smallpict/sdk"
