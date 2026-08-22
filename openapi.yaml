@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: SmallPict Image Optimization API
+  description: |
+    Production REST API for high-performance cloud image optimization, format transcoding (WebP, AVIF, PNG, JPEG), CDN edge invalidation, and real-time quota tracking.
+  version: 1.1.9
+  contact:
+    name: SmallPict Engineering
+    email: support@tuxnoob.com
+    url: https://smallpict.tuxnoob.com
+  license:
+    name: Proprietary / Commercial
+
+servers:
+  - url: https://api.tuxnoob.com/v1
+    description: Production API Server
+  - url: https://api.smolpict.com/v1
+    description: High-Availability Edge Secondary
+
+paths:
+  /optimize:
+    post:
+      summary: Optimize and Transcode Image
+      operationId: optimizeImage
+  /convert:
+    post:
+      summary: Convert Image (Alias for /optimize)
+      operationId: convertImage
+  /optimize/status:
+    get:
+      summary: Poll Asynchronous Job Status
+      operationId: getJobStatus
+  /quota:
+    get:
+      summary: Get Real-Time Storage & CDN Quota
+      operationId: getQuota
+  /purge:
+    post:
+      summary: Purge CDN Edge Cache
+      operationId: purgeCDN

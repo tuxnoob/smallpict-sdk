@@ -8,17 +8,24 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-OPENAPI_SPEC="${ROOT_DIR}/../smallPict-api/docs/openapi.yaml"
+
+OPENAPI_SPEC=""
+if [ -f "${ROOT_DIR}/docs/openapi.yaml" ]; then
+  OPENAPI_SPEC="${ROOT_DIR}/docs/openapi.yaml"
+elif [ -f "${ROOT_DIR}/openapi.yaml" ]; then
+  OPENAPI_SPEC="${ROOT_DIR}/openapi.yaml"
+elif [ -f "${ROOT_DIR}/../smallPict-api/docs/openapi.yaml" ]; then
+  OPENAPI_SPEC="${ROOT_DIR}/../smallPict-api/docs/openapi.yaml"
+fi
 
 echo "=================================================="
 echo "  SmallPict Master SDK Contract Audit (Phase 4)   "
 echo "=================================================="
 
-# 1. Check OpenAPI specification
-if [ -f "${OPENAPI_SPEC}" ]; then
+if [ -n "${OPENAPI_SPEC}" ] && [ -f "${OPENAPI_SPEC}" ]; then
   echo "✅ Master OpenAPI 3.1.0 Spec: ${OPENAPI_SPEC}"
 else
-  echo "❌ Missing Master OpenAPI Spec at: ${OPENAPI_SPEC}"
+  echo "❌ Missing Master OpenAPI Spec at: ${ROOT_DIR}/docs/openapi.yaml"
   exit 1
 fi
 

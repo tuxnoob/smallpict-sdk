@@ -20,27 +20,25 @@ jobs:
         run: ./scripts/check-sdk-contract.sh
 
   test-node:
-    name: Node.js SDK (${{ matrix.node }})
+    name: Node.js SDK (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: smallpict-node
     strategy:
       matrix:
-        node: ["18.x", "20.x", "22.x"]
+        node: ["20.x", "22.x"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: 'npm'
-          cache-dependency-path: smallpict-node/package-lock.json
-      - run: npm ci
+      - run: npm install
       - run: npm test
       - run: npm run build
 
   test-python:
-    name: Python SDK (${{ matrix.python }})
+    name: Python SDK (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,11 +53,11 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: |
           pip install --upgrade pip
-          pip install hatch pytest pytest-asyncio
+          pip install -e ".[dev,pil]"
       - run: pytest
 
   test-php:
-    name: PHP SDK (${{ matrix.php }})
+    name: PHP SDK (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -74,11 +72,13 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: curl, json, openssl, mbstring
           tools: composer:v2
-      - run: composer install --prefer-dist --no-progress
-      - run: vendor/bin/phpunit
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-progress
+      - name: Run test suite
+        run: vendor/bin/phpunit
 
   test-go:
-    name: Go SDK (${{ matrix.go }})
+    name: Go SDK (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -101,7 +101,7 @@ jobs:
         working-directory: smallpict-rust
     strategy:
       matrix:
-        rust: ["stable", "1.75.0"]
+        rust: ["stable", "1.80.0"]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -112,7 +112,7 @@ jobs:
       - run: cargo clippy --all-targets --all-features -- -D warnings
 
   test-ruby:
-    name: Ruby SDK (${{ matrix.ruby }})
+    name: Ruby SDK (Ruby ${{ matrix.ruby }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -125,11 +125,13 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-          bundler-cache: true
-      - run: bundle exec rspec
+      - run: |
+          gem install bundler
+          bundle install
+          bundle exec rspec
 
   test-java:
-    name: Java SDK (${{ matrix.java }})
+    name: Java SDK (Java ${{ matrix.java }})
     runs-on: ubuntu-latest
     defaults:
       run:

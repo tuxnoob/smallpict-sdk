@@ -286,11 +286,10 @@ public class SmallPictClient {
                             }).orElse(null);
 
                     if ((statusCode == 429 || (statusCode >= 500 && statusCode <= 504)) && attempt <= config.getMaxRetries()) {
-                        long delayMs = 250L * (1L << (attempt - 1));
-                        if (retryAfter != null && retryAfter > 0) {
-                            delayMs = retryAfter * 1000L;
-                        }
-                        long jitter = ThreadLocalRandom.current().nextLong(0, 100);
+                        final long delayMs = (retryAfter != null && retryAfter > 0)
+                                ? retryAfter * 1000L
+                                : 250L * (1L << (attempt - 1));
+                        final long jitter = ThreadLocalRandom.current().nextLong(0, 100);
 
                         return CompletableFuture.runAsync(() -> {
                             try {
