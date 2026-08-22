@@ -1,0 +1,454 @@
+package smallpict
+
+import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"encoding/json"
+	"fmt"
+	"io"
+	"math"
+	"math/big"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// Client is the official SmallPict API client.
+type Client struct {
+	apiKey       string
+	secretKey    string
+	baseURL      string
+	timeout      time.Duration
+	maxRetries   int
+	fallbackMode string
+	httpClient   *http.Client
+}
+
+// NewClient initializes a new SmallPict Client with functional options.
+func NewClient(opts ...Option) (*Client, error) {
+	c := &Client{
+		apiKey:       os.Getenv("SMALLPICT_API_KEY"),
+		secretKey:    os.Getenv("SMALLPICT_SECRET_KEY"),
+		baseURL:      "https://api.tuxnoob.com",
+		timeout:      30 * time.Second,
+		maxRetries:   3,
+		fallbackMode: FallbackThrow,
+	}
+
+	if envBase := os.Getenv("SMALLPICT_BASE_URL"); envBase != "" {
+		c.baseURL = strings.TrimRight(envBase, "/")
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	if c.apiKey == "" {
+		return nil, &Error{
+			Code:    "VALIDATION_FAILED",
+			Message: "Missing required SmallPict API key. Pass WithAPIKey(...) or set SMALLPICT_API_KEY environment variable.",
+		}
+	}
+
+	if c.httpClient == nil {
+		c.httpClient = &http.Client{
+			Timeout: c.timeout,
+		}
+	}
+
+	return c, nil
+}
+
+// Optimize streams an image from an io.Reader and returns the optimized result.
+func (c *Client) Optimize(ctx context.Context, source io.Reader, opts *OptimizeOptions) (*OptimizeResult, error) {
+	if opts == nil {
+		opts = &OptimizeOptions{
+			Format:        FormatAuto,
+			Quality:       80,
+			Fit:           FitCover,
+			StripMetadata: true,
+		}
+	}
+
+	var data []byte
+	var err error
+	if source != nil {
+		data, err = io.ReadAll(source)
+		if err != nil {
+			return nil, &Error{Code: "NETWORK_ERROR", Message: fmt.Sprintf("Failed to read image source stream: %v", err), Err: err}
+		}
+	}
+
+	filename := opts.Filename
+	if filename == "" {
+		filename = "image.jpg"
+	}
+	mimeType := opts.MIMEType
+	if mimeType == "" {
+		mimeType = "image/jpeg"
+	}
+
+	payload := map[string]interface{}{
+		"filename":  filename,
+		"mime_type": mimeType,
+		"filesize":  len(data),
+		"options": map[string]interface{}{
+			"format":         opts.Format,
+			"quality":        opts.Quality,
+			"max_width":      opts.MaxWidth,
+			"max_height":     opts.MaxHeight,
+			"fit":            opts.Fit,
+			"lossless":       opts.Lossless,
+			"strip_metadata": opts.StripMetadata,
+		},
+	}
+
+	resMap, err := c.request(ctx, http.MethodPost, "/v1/optimize", payload, opts.IdempotencyKey)
+	if err != nil {
+		if IsQuotaExceeded(err) && c.fallbackMode == FallbackPassthrough {
+			return &OptimizeResult{
+				JobID:             "fallback-passthrough",
+				Status:            "completed",
+				Format:            strings.TrimPrefix(mimeType, "image/"),
+				OriginalSize:      int64(len(data)),
+				CompressedSize:    int64(len(data)),
+				BytesSaved:        0,
+				SavingsPercentage: 0.0,
+				Data:              data,
+			}, nil
+		}
+		return nil, err
+	}
+
+	origSize := getInt64(resMap, "original_size", int64(len(data)))
+	compSize := getInt64(resMap, "compressed_size", origSize)
+	saved := getInt64(resMap, "bytes_saved", int64(math.Max(0, float64(origSize-compSize))))
+	savingsPct := getFloat64(resMap, "savings_percentage", 0.0)
+	if savingsPct == 0 && origSize > 0 {
+		savingsPct = math.Round((float64(saved)/float64(origSize)*100)*100) / 100
+	}
+
+	return &OptimizeResult{
+		JobID:             getString(resMap, "job_id", "sync"),
+		Status:            getString(resMap, "status", "completed"),
+		URL:               getString(resMap, "url", ""),
+		Format:            getString(resMap, "format", opts.Format),
+		OriginalSize:      origSize,
+		CompressedSize:    compSize,
+		BytesSaved:        saved,
+		SavingsPercentage: savingsPct,
+		UploadURL:         getString(resMap, "upload_url", ""),
+	}, nil
+}
+
+// OptimizeBytes compresses an in-memory byte slice.
+func (c *Client) OptimizeBytes(ctx context.Context, data []byte, opts *OptimizeOptions) (*OptimizeResult, error) {
+	return c.Optimize(ctx, bytes.NewReader(data), opts)
+}
+
+// OptimizeFile reads and optimizes a local file from disk.
+func (c *Client) OptimizeFile(ctx context.Context, filePath string, opts *OptimizeOptions) (*OptimizeResult, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, &Error{Code: "VALIDATION_FAILED", Message: fmt.Sprintf("Failed to open file: %v", err), Err: err}
+	}
+	defer f.Close()
+
+	if opts == nil {
+		opts = &OptimizeOptions{
+			Format:        FormatAuto,
+			Quality:       80,
+			Fit:           FitCover,
+			StripMetadata: true,
+		}
+	}
+	if opts.Filename == "" {
+		opts.Filename = filepath.Base(filePath)
+	}
+
+	return c.Optimize(ctx, f, opts)
+}
+
+// GetQuota retrieves real-time account storage quota and CDN egress bandwidth metrics.
+func (c *Client) GetQuota(ctx context.Context) (*QuotaResponse, error) {
+	resMap, err := c.request(ctx, http.MethodGet, "/v1/quota", nil, "")
+	if err != nil {
+		return nil, err
+	}
+
+	bytesUsed := getInt64(resMap, "bytes_used", 0)
+	quotaLimit := getInt64(resMap, "quota_limit", 0)
+	pct := getFloat64(resMap, "quota_percentage", 0.0)
+	if pct == 0 && quotaLimit > 0 {
+		pct = math.Round((float64(bytesUsed)/float64(quotaLimit)*100)*100) / 100
+	}
+
+	quota := &QuotaResponse{
+		Plan:            getString(resMap, "plan", "free"),
+		BytesUsed:       bytesUsed,
+		QuotaLimit:      quotaLimit,
+		QuotaPercentage: pct,
+	}
+
+	if v, ok := resMap["cdn_egress_used_bytes"].(float64); ok {
+		val := int64(v)
+		quota.CDNEgressUsedBytes = &val
+	}
+	if v, ok := resMap["cdn_egress_quota_bytes"].(float64); ok {
+		val := int64(v)
+		quota.CDNEgressQuotaBytes = &val
+	}
+	if v, ok := resMap["active_keys_count"].(float64); ok {
+		val := int(v)
+		quota.ActiveKeysCount = &val
+	}
+	if v, ok := resMap["active_sites_count"].(float64); ok {
+		val := int(v)
+		quota.ActiveSitesCount = &val
+	}
+
+	return quota, nil
+}
+
+// PurgeCDN invalidates cached assets across global CDN edge points of presence.
+func (c *Client) PurgeCDN(ctx context.Context, urls []string, purgeType string) (*PurgeResponse, error) {
+	if purgeType == "" {
+		purgeType = PurgeTypeURL
+	}
+	payload := map[string]interface{}{
+		"purge_type": purgeType,
+		"urls":       urls,
+	}
+
+	resMap, err := c.request(ctx, http.MethodPost, "/v1/purge", payload, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return &PurgeResponse{
+		Message: getString(resMap, "message", "Purge job enqueued"),
+	}, nil
+}
+
+// ValidateKey checks if the configured API key is valid and active.
+func (c *Client) ValidateKey(ctx context.Context) bool {
+	_, err := c.GetQuota(ctx)
+	return err == nil
+}
+
+// GetJobStatus polls the progress of an asynchronous image conversion task.
+func (c *Client) GetJobStatus(ctx context.Context, jobID string) (*JobStatusResult, error) {
+	if jobID == "" {
+		return nil, &Error{Code: "VALIDATION_FAILED", Message: "jobID parameter is required"}
+	}
+
+	resMap, err := c.request(ctx, http.MethodGet, fmt.Sprintf("/v1/optimize/status?job_id=%s", url.QueryEscape(jobID)), nil, "")
+	if err != nil {
+		return nil, err
+	}
+
+	result := &JobStatusResult{
+		JobID:  getString(resMap, "job_id", jobID),
+		Status: getString(resMap, "status", "processing"),
+		URL:    getString(resMap, "url", ""),
+		Format: getString(resMap, "format", ""),
+	}
+
+	if v, ok := resMap["bytes_saved"].(float64); ok {
+		val := int64(v)
+		result.BytesSaved = &val
+	}
+	if v, ok := resMap["error"].(map[string]interface{}); ok {
+		result.Error = v
+	}
+
+	return result, nil
+}
+
+func (c *Client) request(
+	ctx context.Context,
+	method, path string,
+	reqBody interface{},
+	idempotencyKey string,
+) (map[string]interface{}, error) {
+	cleanPath := path
+	if !strings.HasPrefix(cleanPath, "/") {
+		cleanPath = "/" + cleanPath
+	}
+	if !strings.HasPrefix(cleanPath, "/v1/") && !strings.HasPrefix(cleanPath, "/v2/") {
+		cleanPath = "/v1" + cleanPath
+	}
+
+	endpointURL := fmt.Sprintf("%s%s", c.baseURL, cleanPath)
+
+	var bodyBytes []byte
+	bodyHash := EmptySHA256
+
+	if reqBody != nil {
+		var err error
+		bodyBytes, err = json.Marshal(reqBody)
+		if err != nil {
+			return nil, &Error{Code: "VALIDATION_FAILED", Message: fmt.Sprintf("Failed to encode JSON payload: %v", err), Err: err}
+		}
+		bodyHash = SHA256Hex(bodyBytes)
+	}
+
+	attempt := 0
+	baseDelay := 250 * time.Millisecond
+
+	for attempt <= c.maxRetries {
+		attempt++
+
+		if err := ctx.Err(); err != nil {
+			return nil, &Error{Code: "TIMEOUT_ERROR", Message: fmt.Sprintf("Context canceled: %v", err), Err: err}
+		}
+
+		timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+
+		var bodyReader io.Reader
+		if len(bodyBytes) > 0 {
+			bodyReader = bytes.NewReader(bodyBytes)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, method, endpointURL, bodyReader)
+		if err != nil {
+			return nil, &Error{Code: "NETWORK_ERROR", Message: fmt.Sprintf("Failed to create HTTP request: %v", err), Err: err}
+		}
+
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("X-API-Key", c.apiKey)
+
+		if len(bodyBytes) > 0 {
+			req.Header.Set("Content-Type", "application/json")
+		}
+
+		if c.secretKey != "" {
+			stringToSign := BuildStringToSign(method, cleanPath, timestamp, bodyHash)
+			signature := HMACSHA256Hex(c.secretKey, stringToSign)
+			req.Header.Set("X-Timestamp", timestamp)
+			req.Header.Set("X-Signature", signature)
+		} else {
+			req.Header.Set("Authorization", "Bearer "+c.apiKey)
+		}
+
+		if method == http.MethodPost || method == http.MethodPatch || method == http.MethodDelete {
+			if idempotencyKey == "" {
+				idempotencyKey = generateUUID()
+			}
+			req.Header.Set("Idempotency-Key", idempotencyKey)
+		}
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			if attempt <= c.maxRetries {
+				delay := baseDelay * time.Duration(1<<(attempt-1))
+				time.Sleep(delay)
+				continue
+			}
+			return nil, &Error{Code: "NETWORK_ERROR", Message: fmt.Sprintf("HTTP request failed: %v", err), Err: err}
+		}
+
+		respBytes, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		requestID := resp.Header.Get("X-Request-ID")
+		retryAfterHeader := resp.Header.Get("Retry-After")
+
+		// Retry on 429 and transient 5xx
+		if resp.StatusCode == http.StatusTooManyRequests || (resp.StatusCode >= 500 && resp.StatusCode <= 504) {
+			if attempt <= c.maxRetries {
+				delay := baseDelay * time.Duration(1<<(attempt-1))
+				if retryAfterHeader != "" {
+					if sec, parseErr := strconv.Atoi(retryAfterHeader); parseErr == nil && sec > 0 {
+						delay = time.Duration(sec) * time.Second
+					}
+				}
+				jitter := time.Duration(cryptoRandomInt(0, 100)) * time.Millisecond
+				time.Sleep(delay + jitter)
+				continue
+			}
+		}
+
+		var result map[string]interface{}
+		_ = json.Unmarshal(respBytes, &result)
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			msg := fmt.Sprintf("API request failed with HTTP %d", resp.StatusCode)
+			code := "INTERNAL_ERROR"
+			var details map[string]interface{}
+
+			if result != nil {
+				if errObj, ok := result["error"].(map[string]interface{}); ok {
+					if m, ok := errObj["message"].(string); ok {
+						msg = m
+					}
+					if c, ok := errObj["code"].(string); ok {
+						code = c
+					}
+					if d, ok := errObj["details"].(map[string]interface{}); ok {
+						details = d
+					}
+				} else if m, ok := result["message"].(string); ok {
+					msg = m
+				}
+			}
+
+			return nil, &Error{
+				Code:       code,
+				StatusCode: resp.StatusCode,
+				RequestID:  requestID,
+				Message:    msg,
+				Details:    details,
+			}
+		}
+
+		if result == nil {
+			result = make(map[string]interface{})
+		}
+		return result, nil
+	}
+
+	return nil, &Error{Code: "NETWORK_ERROR", Message: "Request failed after maximum retry attempts"}
+}
+
+func getString(m map[string]interface{}, key, defaultVal string) string {
+	if v, ok := m[key].(string); ok {
+		return v
+	}
+	return defaultVal
+}
+
+func getInt64(m map[string]interface{}, key string, defaultVal int64) int64 {
+	if v, ok := m[key].(float64); ok {
+		return int64(v)
+	}
+	return defaultVal
+}
+
+func getFloat64(m map[string]interface{}, key string, defaultVal float64) float64 {
+	if v, ok := m[key].(float64); ok {
+		return v
+	}
+	return defaultVal
+}
+
+func generateUUID() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
+
+func cryptoRandomInt(min, max int64) int64 {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(max-min+1))
+	if err != nil {
+		return min
+	}
+	return nBig.Int64() + min
+}
