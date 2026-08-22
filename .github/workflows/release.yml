@@ -37,6 +37,7 @@ jobs:
   publish-node:
     name: 📦 Publish Node.js SDK (@smallpict/sdk -> npm)
     needs: verify
+    environment: release
     if: ${{ github.event_name == 'push' || inputs.sdk == 'all' || inputs.sdk == 'node' }}
     runs-on: ubuntu-latest
     permissions:
@@ -61,6 +62,7 @@ jobs:
   publish-python:
     name: 📦 Publish Python SDK (smallpict -> PyPI)
     needs: verify
+    environment: release
     if: ${{ github.event_name == 'push' || inputs.sdk == 'all' || inputs.sdk == 'python' }}
     runs-on: ubuntu-latest
     permissions:
@@ -83,6 +85,7 @@ jobs:
   publish-php:
     name: 📦 Notify Packagist (smallpict/smallpict-php)
     needs: verify
+    environment: release
     if: ${{ github.event_name == 'push' || inputs.sdk == 'all' || inputs.sdk == 'php' }}
     runs-on: ubuntu-latest
     steps:
@@ -96,6 +99,7 @@ jobs:
   publish-go:
     name: 📦 Index Go SDK (pkg.go.dev)
     needs: verify
+    environment: release
     if: ${{ github.event_name == 'push' || inputs.sdk == 'all' || inputs.sdk == 'go' }}
     runs-on: ubuntu-latest
     steps:
@@ -107,6 +111,7 @@ jobs:
   publish-rust:
     name: 📦 Publish Rust SDK (smallpict -> crates.io)
     needs: verify
+    environment: release
     if: ${{ github.event_name == 'push' || inputs.sdk == 'all' || inputs.sdk == 'rust' }}
     runs-on: ubuntu-latest
     defaults:
@@ -120,6 +125,7 @@ jobs:
   publish-ruby:
     name: 📦 Publish Ruby SDK (smallpict -> RubyGems)
     needs: verify
+    environment: release
     if: ${{ github.event_name == 'push' || inputs.sdk == 'all' || inputs.sdk == 'ruby' }}
     runs-on: ubuntu-latest
     defaults:
@@ -141,6 +147,7 @@ jobs:
   publish-java:
     name: 📦 Publish Java SDK (com.smallpict:smallpict-java -> Maven Central)
     needs: verify
+    environment: release
     if: ${{ github.event_name == 'push' || inputs.sdk == 'all' || inputs.sdk == 'java' }}
     runs-on: ubuntu-latest
     defaults:
