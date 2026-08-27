@@ -5,21 +5,22 @@ module SmallPict
     attr_reader :code, :status_code, :request_id, :details
 
     def initialize(message = "", code: "INTERNAL_ERROR", status_code: nil, request_id: nil, details: nil)
+      @raw_message = self.class.sanitize(message)
       @code        = code
       @status_code = status_code
       @request_id  = request_id
       @details     = details
-      super(self.class.sanitize(message))
+      super(@raw_message)
     end
 
     def to_s
       status_str = @status_code ? " HTTP #{@status_code}" : ""
       req_str = @request_id ? " (Request ID: #{@request_id})" : ""
-      "[#{@code}#{status_str}]: #{message}#{req_str}"
+      "[#{@code}#{status_str}]: #{@raw_message}#{req_str}"
     end
 
     def inspect
-      "#<#{self.class.name} code=#{@code.inspect} status_code=#{@status_code.inspect} message=#{message.inspect}>"
+      "#<#{self.class.name} code=#{@code.inspect} status_code=#{@status_code.inspect} message=#{@raw_message.inspect}>"
     end
 
     def self.sanitize(msg)
