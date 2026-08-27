@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.8"
 authors = [
-    { name = "SmallPict Engineering", email = "support@tuxnoob.com" }
+    { name = "SmallPict Engineering", email = "support@smallpict.app" }
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -44,9 +44,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://smallpict.tuxnoob.com"
+Homepage = "https://smallpict.app"
 Repository = "https://github.com/tuxnoob/smallpict-python"
-Documentation = "https://smallpict.tuxnoob.com/docs/sdks/python"
+Documentation = "https://smallpict.app/docs/sdks/python"
 Changelog = "https://github.com/tuxnoob/smallpict-python/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]

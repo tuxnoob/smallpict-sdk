@@ -9,7 +9,7 @@ The SmallPict team takes security and data integrity very seriously across all S
 If you discover a security vulnerability in any SmallPict SDK or backend API, please **DO NOT open a public GitHub issue**.
 
 Please report the vulnerability privately:
-- **Email:** [security@tuxnoob.com](mailto:security@tuxnoob.com)
+- **Email:** [security@smallpict.app](mailto:security@smallpict.app)
 - **Response SLA:** Initial acknowledgment within **24 hours**, with triage and patch timeline within **72 hours**.
 
 ---

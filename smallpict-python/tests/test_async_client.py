@@ -21,7 +21,7 @@ async def test_async_optimize_success():
             json={
                 "job_id": "job_async_123",
                 "status": "completed",
-                "url": "https://cdn.smallpict.com/opt/async.webp",
+                "url": "https://cdn.smallpict.app/opt/async.webp",
                 "format": "webp",
                 "original_size": 150000,
                 "compressed_size": 30000,
@@ -45,7 +45,7 @@ async def test_async_optimize_success():
 
         assert result.job_id == "job_async_123"
         assert result.status == "completed"
-        assert result.url == "https://cdn.smallpict.com/opt/async.webp"
+        assert result.url == "https://cdn.smallpict.app/opt/async.webp"
         assert result.savings_percentage == 80.0
 
 
@@ -80,7 +80,7 @@ async def test_async_purge_cdn():
     http_client = httpx.AsyncClient(transport=transport)
 
     async with AsyncSmallPictClient(api_key="sp_live_async_key", http_client=http_client) as client:
-        res = await client.purge_cdn(["https://cdn.smallpict.com/opt/async.webp"])
+        res = await client.purge_cdn(["https://cdn.smallpict.app/opt/async.webp"])
         assert res.message == "Purge accepted"
 
 

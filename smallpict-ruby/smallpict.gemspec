@@ -6,11 +6,11 @@ Gem::Specification.new do |spec|
   spec.name          = "smallpict"
   spec.version       = SmallPict::VERSION
   spec.authors       = ["SmallPict Engineering"]
-  spec.email         = ["support@tuxnoob.com"]
+  spec.email         = ["support@smallpict.app"]
 
   spec.summary       = "Official Ruby SDK for SmallPict Image Optimization API"
   spec.description   = "High-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and Rails ActiveStorage integration."
-  spec.homepage      = "https://smallpict.tuxnoob.com"
+  spec.homepage      = "https://smallpict.app"
   spec.license       = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 

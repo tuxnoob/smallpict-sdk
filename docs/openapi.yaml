@@ -12,13 +12,13 @@ info:
   version: 1.1.9
   contact:
     name: SmallPict Engineering
-    email: support@tuxnoob.com
-    url: https://smallpict.tuxnoob.com
+    email: support@smallpict.app
+    url: https://smallpict.app
   license:
     name: Proprietary / Commercial
 
 servers:
-  - url: https://api.tuxnoob.com/v1
+  - url: https://api.smallpict.app/v1
     description: Production API Server
   - url: https://api.smolpict.com/v1
     description: High-Availability Edge Secondary
@@ -174,8 +174,8 @@ paths:
             example:
               purge_type: "url"
               urls:
-                - "https://cdn.smallpict.com/images/hero-banner.avif"
-                - "https://cdn.smallpict.com/images/logo.webp"
+                - "https://cdn.smallpict.app/images/hero-banner.avif"
+                - "https://cdn.smallpict.app/images/logo.webp"
       responses:
         '202':
           description: Purge request accepted and enqueued for asynchronous edge propagation
@@ -382,7 +382,7 @@ components:
           type: string
           format: uri
           description: Permanent Edge CDN URL of the optimized asset
-          example: "https://cdn.smallpict.com/opt/hero-image.avif"
+          example: "https://cdn.smallpict.app/opt/hero-image.avif"
         format:
           type: string
           example: "avif"

@@ -10,13 +10,13 @@
     "cdn",
     "laravel"
   ],
-  "homepage": "https://smallpict.tuxnoob.com",
+  "homepage": "https://smallpict.app",
   "license": "MIT",
   "type": "library",
   "authors": [
     {
       "name": "SmallPict Engineering",
-      "email": "support@tuxnoob.com"
+      "email": "support@smallpict.app"
     }
   ],
   "require": {

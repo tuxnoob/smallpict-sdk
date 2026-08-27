@@ -1,6 +1,6 @@
 # SmallPict Go SDK
 
-Official idiomatic Go SDK for the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
+Official idiomatic Go SDK for the [SmallPict Image Optimization API](https://smallpict.app) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/tuxnoob/smallpict-go.svg)](https://pkg.go.dev/github.com/tuxnoob/smallpict-go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -120,7 +120,7 @@ if err == nil {
 }
 
 // 2. Invalidate CDN cache for updated images
-purgeRes, err := client.PurgeCDN(ctx, []string{"https://cdn.smallpict.com/opt/hero-banner.avif"}, smallpict.PurgeTypeURL)
+purgeRes, err := client.PurgeCDN(ctx, []string{"https://cdn.smallpict.app/opt/hero-banner.avif"}, smallpict.PurgeTypeURL)
 if err == nil {
 	fmt.Println(purgeRes.Message)
 }
@@ -139,4 +139,4 @@ go vet ./...
 
 ## 📄 License
 
-MIT © [SmallPict Engineering](https://smallpict.tuxnoob.com)
+MIT © [SmallPict Engineering](https://smallpict.app)

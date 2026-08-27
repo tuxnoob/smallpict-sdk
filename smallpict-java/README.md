@@ -1,6 +1,6 @@
 # SmallPict Java SDK
 
-Official Java SDK for the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, cache purging, and Spring Boot auto-configuration.
+Official Java SDK for the [SmallPict Image Optimization API](https://smallpict.app) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, cache purging, and Spring Boot auto-configuration.
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.smallpict/smallpict-java.svg)](https://search.maven.org/artifact/com.smallpict/smallpict-java)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -121,7 +121,7 @@ QuotaResponse quota = client.getQuota();
 System.out.printf("Plan: %s, Quota Used: %.2f%%\n", quota.getPlan(), quota.getQuotaPercentage());
 
 // 2. Invalidate Edge CDN cache
-PurgeResponse purge = client.purgeCdn(List.of("https://cdn.smallpict.com/opt/hero-banner.avif"), PurgeType.URL);
+PurgeResponse purge = client.purgeCdn(List.of("https://cdn.smallpict.app/opt/hero-banner.avif"), PurgeType.URL);
 System.out.println(purge.getMessage());
 ```
 
@@ -129,4 +129,4 @@ System.out.println(purge.getMessage());
 
 ## 📄 License
 
-MIT © [SmallPict Engineering](https://smallpict.tuxnoob.com)
+MIT © [SmallPict Engineering](https://smallpict.app)

@@ -478,7 +478,7 @@ impl ClientBuilder {
 
         let base = self
             .base_url
-            .unwrap_or_else(|| "https://api.tuxnoob.com".to_string());
+            .unwrap_or_else(|| "https://api.smallpict.app".to_string());
 
         let http_client = reqwest::Client::builder()
             .timeout(self.timeout)

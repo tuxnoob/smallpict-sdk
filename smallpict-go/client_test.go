@@ -53,7 +53,7 @@ func TestOptimizeSuccess(t *testing.T) {
 		respBody, _ := json.Marshal(map[string]interface{}{
 			"job_id":             "job_go_123",
 			"status":             "completed",
-			"url":                "https://cdn.smallpict.com/opt/hero.avif",
+			"url":                "https://cdn.smallpict.app/opt/hero.avif",
 			"format":             "avif",
 			"original_size":      float64(100000),
 			"compressed_size":    float64(15000),
@@ -89,7 +89,7 @@ func TestOptimizeSuccess(t *testing.T) {
 	if res.JobID != "job_go_123" {
 		t.Errorf("unexpected JobID: %s", res.JobID)
 	}
-	if res.URL != "https://cdn.smallpict.com/opt/hero.avif" {
+	if res.URL != "https://cdn.smallpict.app/opt/hero.avif" {
 		t.Errorf("unexpected URL: %s", res.URL)
 	}
 	if res.SavingsPercentage != 85.0 {
@@ -106,7 +106,7 @@ func TestOptimizeFile(t *testing.T) {
 		respBody, _ := json.Marshal(map[string]interface{}{
 			"job_id":             "job_file_1",
 			"status":             "completed",
-			"url":                "https://cdn.smallpict.com/opt/test.webp",
+			"url":                "https://cdn.smallpict.app/opt/test.webp",
 			"format":             "webp",
 			"original_size":      float64(15),
 			"compressed_size":    float64(5),
@@ -193,7 +193,7 @@ func TestPurgeCDN(t *testing.T) {
 		t.Fatalf("unexpected NewClient error: %v", err)
 	}
 
-	res, err := client.PurgeCDN(context.Background(), []string{"https://cdn.smallpict.com/opt/hero.avif"}, PurgeTypeURL)
+	res, err := client.PurgeCDN(context.Background(), []string{"https://cdn.smallpict.app/opt/hero.avif"}, PurgeTypeURL)
 	if err != nil {
 		t.Fatalf("unexpected PurgeCDN error: %v", err)
 	}
@@ -207,7 +207,7 @@ func TestGetJobStatus(t *testing.T) {
 		respBody, _ := json.Marshal(map[string]interface{}{
 			"job_id":      "job_async_123",
 			"status":      "completed",
-			"url":         "https://cdn.smallpict.com/opt/async.avif",
+			"url":         "https://cdn.smallpict.app/opt/async.avif",
 			"format":      "avif",
 			"bytes_saved": float64(45000),
 		})
@@ -226,7 +226,7 @@ func TestGetJobStatus(t *testing.T) {
 	if res.Status != "completed" {
 		t.Errorf("unexpected status: %s", res.Status)
 	}
-	if res.URL != "https://cdn.smallpict.com/opt/async.avif" {
+	if res.URL != "https://cdn.smallpict.app/opt/async.avif" {
 		t.Errorf("unexpected URL: %s", res.URL)
 	}
 }

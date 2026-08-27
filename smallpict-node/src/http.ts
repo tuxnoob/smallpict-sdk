@@ -53,7 +53,7 @@ export class HttpClient {
   constructor(options: ClientOptions) {
     this.apiKey = options.apiKey;
     this.secretKey = options.secretKey;
-    this.baseUrl = (options.baseUrl || 'https://api.tuxnoob.com').replace(/\/+$/, '');
+    this.baseUrl = (options.baseUrl || 'https://api.smallpict.app').replace(/\/+$/, '');
     this.timeoutMs = options.timeoutMs ?? 30000;
     this.maxRetries = options.maxRetries ?? 3;
     this.fetchImpl = options.fetch || globalThis.fetch;

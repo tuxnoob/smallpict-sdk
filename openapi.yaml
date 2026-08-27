@@ -6,13 +6,13 @@ info:
   version: 1.1.9
   contact:
     name: SmallPict Engineering
-    email: support@tuxnoob.com
-    url: https://smallpict.tuxnoob.com
+    email: support@smallpict.app
+    url: https://smallpict.app
   license:
     name: Proprietary / Commercial
 
 servers:
-  - url: https://api.tuxnoob.com/v1
+  - url: https://api.smallpict.app/v1
     description: Production API Server
   - url: https://api.smolpict.com/v1
     description: High-Availability Edge Secondary

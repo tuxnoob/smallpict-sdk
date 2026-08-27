@@ -42,7 +42,7 @@ class ModelsTest {
         {
             "job_id": "job_123",
             "status": "completed",
-            "url": "https://cdn.smallpict.com/opt/hero.avif",
+            "url": "https://cdn.smallpict.app/opt/hero.avif",
             "format": "avif",
             "original_size": 100000,
             "compressed_size": 15000,
@@ -54,7 +54,7 @@ class ModelsTest {
         OptimizeResult result = mapper.readValue(json, OptimizeResult.class);
         assertEquals("job_123", result.getJobId());
         assertEquals("completed", result.getStatus());
-        assertEquals("https://cdn.smallpict.com/opt/hero.avif", result.getUrl());
+        assertEquals("https://cdn.smallpict.app/opt/hero.avif", result.getUrl());
         assertEquals(85.0, result.getSavingsPercentage());
         assertEquals(85000, result.getBytesSaved());
     }

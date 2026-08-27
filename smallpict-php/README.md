@@ -1,6 +1,6 @@
 # SmallPict PHP SDK
 
-Official PHP SDK for the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
+Official PHP SDK for the [SmallPict Image Optimization API](https://smallpict.app) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/smallpict/smallpict-php.svg)](https://packagist.org/packages/smallpict/smallpict-php)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
@@ -137,7 +137,7 @@ $quota = $client->getQuota();
 echo "Plan: {$quota->getPlan()}, Quota used: {$quota->getQuotaPercentage()}%\n";
 
 // 2. Invalidate CDN cache
-$client->purgeCdn(['https://cdn.smallpict.com/opt/hero-banner.avif']);
+$client->purgeCdn(['https://cdn.smallpict.app/opt/hero-banner.avif']);
 echo "CDN cache invalidated successfully.\n";
 ```
 
@@ -153,4 +153,4 @@ composer test
 
 ## 📄 License
 
-MIT © [SmallPict Engineering](https://smallpict.tuxnoob.com)
+MIT © [SmallPict Engineering](https://smallpict.app)

@@ -1,6 +1,6 @@
 # SmallPict Rust SDK
 
-Official Rust SDK for the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
+Official Rust SDK for the [SmallPict Image Optimization API](https://smallpict.app) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
 
 [![Crates.io](https://img.shields.io/crates/v/smallpict.svg)](https://crates.io/crates/smallpict)
 [![Documentation](https://docs.rs/smallpict/badge.svg)](https://docs.rs/smallpict)
@@ -97,7 +97,7 @@ let quota = client.get_quota().await?;
 println!("Plan: {}, Quota Used: {:.2}%", quota.plan, quota.quota_percentage);
 
 // 2. Invalidate Edge CDN cache
-let purge = client.purge_cdn(&["https://cdn.smallpict.com/opt/hero-banner.avif"], smallpict::PurgeType::Url).await?;
+let purge = client.purge_cdn(&["https://cdn.smallpict.app/opt/hero-banner.avif"], smallpict::PurgeType::Url).await?;
 println!("{}", purge.message);
 ```
 
@@ -114,4 +114,4 @@ cargo clippy --all-targets --all-features -- -D warnings
 
 ## 📄 License
 
-MIT © [SmallPict Engineering](https://smallpict.tuxnoob.com)
+MIT © [SmallPict Engineering](https://smallpict.app)

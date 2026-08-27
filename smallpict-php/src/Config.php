@@ -33,7 +33,7 @@ class Config
 
         $this->apiKey = $resolvedApiKey;
         $this->secretKey = $secretKey ?? (getenv('SMALLPICT_SECRET_KEY') ?: null);
-        $this->baseUrl = rtrim($baseUrl ?? (getenv('SMALLPICT_BASE_URL') ?: 'https://api.tuxnoob.com'), '/');
+        $this->baseUrl = rtrim($baseUrl ?? (getenv('SMALLPICT_BASE_URL') ?: 'https://api.smallpict.app'), '/');
         $this->timeout = $timeout;
         $this->maxRetries = $maxRetries;
         $this->fallbackMode = $fallbackMode;

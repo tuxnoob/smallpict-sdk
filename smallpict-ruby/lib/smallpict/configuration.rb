@@ -7,7 +7,7 @@ module SmallPict
     def initialize
       @api_key       = ENV["SMALLPICT_API_KEY"]
       @secret_key    = ENV["SMALLPICT_SECRET_KEY"]
-      @base_url      = (ENV["SMALLPICT_BASE_URL"] || "https://api.tuxnoob.com").chomp("/")
+      @base_url      = (ENV["SMALLPICT_BASE_URL"] || "https://api.smallpict.app").chomp("/")
       @timeout       = 30
       @max_retries   = 3
       @fallback_mode = :throw

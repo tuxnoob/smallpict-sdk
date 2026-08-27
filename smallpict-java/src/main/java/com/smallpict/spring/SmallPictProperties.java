@@ -8,7 +8,7 @@ import java.time.Duration;
 public class SmallPictProperties {
     private String apiKey;
     private String secretKey;
-    private String baseUrl = "https://api.tuxnoob.com";
+    private String baseUrl = "https://api.smallpict.app";
     private Duration timeout = Duration.ofSeconds(30);
     private int maxRetries = 3;
     private FallbackMode fallbackMode = FallbackMode.THROW;

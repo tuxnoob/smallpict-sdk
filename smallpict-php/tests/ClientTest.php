@@ -27,7 +27,7 @@ class ClientTest extends TestCase
             public function send(string $method, string $url, array $headers = [], ?string $body = null, float $timeout = 30.0): array
             {
                 TestCase::assertSame('POST', $method);
-                TestCase::assertSame('https://api.tuxnoob.com/v1/optimize', $url);
+                TestCase::assertSame('https://api.smallpict.app/v1/optimize', $url);
                 TestCase::assertSame('sp_live_test_1234567890', $headers['X-API-Key']);
                 TestCase::assertArrayHasKey('X-Signature', $headers);
                 TestCase::assertArrayHasKey('X-Timestamp', $headers);
@@ -39,7 +39,7 @@ class ClientTest extends TestCase
                     'body' => (string)json_encode([
                         'job_id' => 'job_php_123',
                         'status' => 'completed',
-                        'url' => 'https://cdn.smallpict.com/opt/photo.avif',
+                        'url' => 'https://cdn.smallpict.app/opt/photo.avif',
                         'format' => 'avif',
                         'original_size' => 100000,
                         'compressed_size' => 15000,
@@ -60,7 +60,7 @@ class ClientTest extends TestCase
 
         $this->assertSame('job_php_123', $result->getJobId());
         $this->assertSame('completed', $result->getStatus());
-        $this->assertSame('https://cdn.smallpict.com/opt/photo.avif', $result->getUrl());
+        $this->assertSame('https://cdn.smallpict.app/opt/photo.avif', $result->getUrl());
         $this->assertSame(85.0, $result->getSavingsPercentage());
         $this->assertSame(85000, $result->getBytesSaved());
     }
@@ -71,7 +71,7 @@ class ClientTest extends TestCase
             public function send(string $method, string $url, array $headers = [], ?string $body = null, float $timeout = 30.0): array
             {
                 TestCase::assertSame('GET', $method);
-                TestCase::assertSame('https://api.tuxnoob.com/v1/quota', $url);
+                TestCase::assertSame('https://api.smallpict.app/v1/quota', $url);
 
                 return [
                     'status' => 200,
@@ -102,7 +102,7 @@ class ClientTest extends TestCase
             public function send(string $method, string $url, array $headers = [], ?string $body = null, float $timeout = 30.0): array
             {
                 TestCase::assertSame('POST', $method);
-                TestCase::assertSame('https://api.tuxnoob.com/v1/purge', $url);
+                TestCase::assertSame('https://api.smallpict.app/v1/purge', $url);
 
                 return [
                     'status' => 202,
@@ -113,7 +113,7 @@ class ClientTest extends TestCase
         };
 
         $client = new Client('sp_live_test', null, $mockHttp);
-        $res = $client->purgeCdn(['https://cdn.smallpict.com/opt/photo.avif']);
+        $res = $client->purgeCdn(['https://cdn.smallpict.app/opt/photo.avif']);
 
         $this->assertSame('Purge enqueued', $res->getMessage());
     }

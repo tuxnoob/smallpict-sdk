@@ -1,6 +1,6 @@
 # SmallPict Python SDK
 
-Official Python client for the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
+Official Python client for the [SmallPict Image Optimization API](https://smallpict.app) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
 
 [![PyPI version](https://img.shields.io/pypi/v/smallpict.svg)](https://pypi.org/project/smallpict/)
 [![Python versions](https://img.shields.io/pypi/pyversions/smallpict.svg)](https://pypi.org/project/smallpict/)
@@ -145,7 +145,7 @@ quota = client.get_quota()
 print(f"Plan: {quota.plan}, Used: {quota.quota_percentage}%")
 
 # 2. Invalidate CDN cache
-client.purge_cdn(["https://cdn.smallpict.com/opt/hero-banner.avif"])
+client.purge_cdn(["https://cdn.smallpict.app/opt/hero-banner.avif"])
 print("CDN edge cache invalidated successfully.")
 ```
 
@@ -163,4 +163,4 @@ ruff check .
 
 ## 📄 License
 
-MIT © [SmallPict Engineering](https://smallpict.tuxnoob.com)
+MIT © [SmallPict Engineering](https://smallpict.app)

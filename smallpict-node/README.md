@@ -1,6 +1,6 @@
 # SmallPict Node.js & TypeScript SDK
 
-Official TypeScript and Node.js SDK for the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
+Official TypeScript and Node.js SDK for the [SmallPict Image Optimization API](https://smallpict.app) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
 
 [![npm version](https://img.shields.io/npm/v/@smallpict/sdk.svg)](https://www.npmjs.com/package/@smallpict/sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -126,8 +126,8 @@ console.log(`Quota Used: ${quota.quotaPercentage}% (${quota.bytesUsed} / ${quota
 
 // 2. Invalidate CDN cache for modified images
 await client.purgeCdn([
-  'https://cdn.smallpict.com/opt/hero-banner.avif',
-  'https://cdn.smallpict.com/opt/logo.webp',
+  'https://cdn.smallpict.app/opt/hero-banner.avif',
+  'https://cdn.smallpict.app/opt/logo.webp',
 ]);
 console.log('CDN cache purged successfully!');
 ```
@@ -146,4 +146,4 @@ npm run build
 
 ## 📄 License
 
-MIT © [SmallPict Engineering](https://smallpict.tuxnoob.com)
+MIT © [SmallPict Engineering](https://smallpict.app)

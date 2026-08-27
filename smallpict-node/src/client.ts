@@ -219,7 +219,7 @@ export class SmallPictClient {
    *
    * @example
    * ```ts
-   * await client.purgeCdn({ urls: ['https://cdn.smallpict.com/opt/hero.avif'] });
+   * await client.purgeCdn({ urls: ['https://cdn.smallpict.app/opt/hero.avif'] });
    * ```
    */
   public async purgeCdn(options?: PurgeOptions | string[]): Promise<PurgeResponse> {

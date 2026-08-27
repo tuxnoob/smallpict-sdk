@@ -44,7 +44,7 @@ export interface ClientOptions {
   secretKey?: string;
 
   /**
-   * API Base URL (defaults to `https://api.tuxnoob.com/v1`).
+   * API Base URL (defaults to `https://api.smallpict.app/v1`).
    */
   baseUrl?: string;
 

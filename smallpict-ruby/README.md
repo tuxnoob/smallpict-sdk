@@ -1,6 +1,6 @@
 # SmallPict Ruby SDK
 
-Official Ruby gem for the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, cache purging, and Rails ActiveStorage support.
+Official Ruby gem for the [SmallPict Image Optimization API](https://smallpict.app) — high-performance next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, cache purging, and Rails ActiveStorage support.
 
 [![Gem Version](https://badge.fury.io/rb/smallpict.svg)](https://badge.fury.io/rb/smallpict)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -102,7 +102,7 @@ quota = SmallPict.get_quota
 puts "Plan: #{quota.plan}, Quota Used: #{quota.quota_percentage}%"
 
 # 2. Invalidate CDN cache for updated images
-purge = SmallPict.purge_cdn(["https://cdn.smallpict.com/opt/hero-banner.avif"])
+purge = SmallPict.purge_cdn(["https://cdn.smallpict.app/opt/hero-banner.avif"])
 puts purge.message
 ```
 
@@ -119,4 +119,4 @@ bundle exec rubocop
 
 ## 📄 License
 
-MIT © [SmallPict Engineering](https://smallpict.tuxnoob.com)
+MIT © [SmallPict Engineering](https://smallpict.app)

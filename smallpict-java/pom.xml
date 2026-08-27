@@ -11,7 +11,7 @@
 
     <name>SmallPict Java SDK</name>
     <description>Official Java SDK for SmallPict Image Optimization API — next-gen compression (AVIF, WebP), Edge CDN delivery, and Spring Boot support.</description>
-    <url>https://smallpict.tuxnoob.com</url>
+    <url>https://smallpict.app</url>
 
     <licenses>
         <license>
@@ -23,9 +23,9 @@
     <developers>
         <developer>
             <name>SmallPict Engineering</name>
-            <email>support@tuxnoob.com</email>
+            <email>support@smallpict.app</email>
             <organization>SmallPict</organization>
-            <organizationUrl>https://smallpict.tuxnoob.com</organizationUrl>
+            <organizationUrl>https://smallpict.app</organizationUrl>
         </developer>
     </developers>
 

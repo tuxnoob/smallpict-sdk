@@ -5,7 +5,7 @@ require "spec_helper"
 RSpec.describe SmallPict::Client do
   let(:api_key) { "sp_live_test_1234567890" }
   let(:secret_key) { "sec_test_secret_123" }
-  let(:base_url) { "https://api.tuxnoob.com" }
+  let(:base_url) { "https://api.smallpict.app" }
   let(:client) { described_class.new(api_key: api_key, secret_key: secret_key, base_url: base_url) }
 
   describe "#initialize" do
@@ -30,7 +30,7 @@ RSpec.describe SmallPict::Client do
           body: JSON.generate({
             job_id:             "job_rb_123",
             status:             "completed",
-            url:                "https://cdn.smallpict.com/opt/photo.avif",
+            url:                "https://cdn.smallpict.app/opt/photo.avif",
             format:             "avif",
             original_size:      100_000,
             compressed_size:    15_000,
@@ -43,7 +43,7 @@ RSpec.describe SmallPict::Client do
 
       expect(result.job_id).to eq("job_rb_123")
       expect(result.status).to eq("completed")
-      expect(result.url).to eq("https://cdn.smallpict.com/opt/photo.avif")
+      expect(result.url).to eq("https://cdn.smallpict.app/opt/photo.avif")
       expect(result.savings_percentage).to eq(85.0)
     end
 
@@ -101,7 +101,7 @@ RSpec.describe SmallPict::Client do
           body: JSON.generate({ message: "Purge accepted" })
         )
 
-      res = client.purge_cdn(["https://cdn.smallpict.com/opt/photo.avif"])
+      res = client.purge_cdn(["https://cdn.smallpict.app/opt/photo.avif"])
       expect(res.message).to eq("Purge accepted")
     end
   end

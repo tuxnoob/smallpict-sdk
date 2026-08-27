@@ -39,7 +39,7 @@ class SmallPictClientTest {
         {
             "job_id": "job_java_123",
             "status": "completed",
-            "url": "https://cdn.smallpict.com/opt/hero.avif",
+            "url": "https://cdn.smallpict.app/opt/hero.avif",
             "format": "avif",
             "original_size": 100000,
             "compressed_size": 15000,
@@ -73,7 +73,7 @@ class SmallPictClientTest {
 
         assertEquals("job_java_123", result.getJobId());
         assertEquals("completed", result.getStatus());
-        assertEquals("https://cdn.smallpict.com/opt/hero.avif", result.getUrl());
+        assertEquals("https://cdn.smallpict.app/opt/hero.avif", result.getUrl());
         assertEquals(85.0, result.getSavingsPercentage());
     }
 
@@ -120,7 +120,7 @@ class SmallPictClientTest {
                 .baseUrl(server.url("/").toString())
                 .build();
 
-        PurgeResponse res = client.purgeCdn(List.of("https://cdn.smallpict.com/opt/hero.avif"), PurgeType.URL);
+        PurgeResponse res = client.purgeCdn(List.of("https://cdn.smallpict.app/opt/hero.avif"), PurgeType.URL);
         RecordedRequest req = server.takeRequest();
         assertEquals("POST", req.getMethod());
         assertEquals("/v1/purge", req.getPath());

@@ -23,7 +23,7 @@ func WithSecretKey(secretKey string) Option {
 	}
 }
 
-// WithBaseURL sets the SmallPict API base endpoint (default: https://api.tuxnoob.com).
+// WithBaseURL sets the SmallPict API base endpoint (default: https://api.smallpict.app).
 func WithBaseURL(baseURL string) Option {
 	return func(c *Client) {
 		c.baseURL = strings.TrimRight(baseURL, "/")

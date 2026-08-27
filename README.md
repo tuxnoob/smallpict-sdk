@@ -4,7 +4,7 @@
 [![OpenAPI 3.1.0](https://img.shields.io/badge/OpenAPI-3.1.0-green.svg)](../smallPict-api/docs/openapi.yaml)
 [![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-success.svg)](#)
 
-Welcome to the **SmallPict SDK Ecosystem** — official developer tools for integrating the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) across **7 programming languages**.
+Welcome to the **SmallPict SDK Ecosystem** — official developer tools for integrating the [SmallPict Image Optimization API](https://smallpict.app) across **7 programming languages**.
 
 ---
 
@@ -54,4 +54,4 @@ Run the automated contract validator locally:
 
 ## 📄 License
 
-MIT © [SmallPict Engineering](https://smallpict.tuxnoob.com)
+MIT © [SmallPict Engineering](https://smallpict.app)

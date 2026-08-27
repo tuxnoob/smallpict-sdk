@@ -12,7 +12,7 @@ When initialized with only an `apiKey`, the SDK includes an `Authorization: Bear
 
 ```http
 POST /v1/optimize HTTP/1.1
-Host: api.tuxnoob.com
+Host: api.smallpict.app
 Authorization: Bearer sp_live_1234567890abcdef1234567890abcdef
 Content-Type: application/json
 ```
@@ -40,7 +40,7 @@ HEX_ENCODED_SHA256_OF_REQUEST_BODY
 ### Headers Sent
 ```http
 POST /v1/optimize HTTP/1.1
-Host: api.tuxnoob.com
+Host: api.smallpict.app
 X-API-Key: sp_live_1234567890abcdef1234567890abcdef
 X-Timestamp: 1716301234
 X-Signature: a1b2c3d4e5f67890... (64 hex characters)

@@ -40,9 +40,9 @@
     "cdn",
     "performance"
   ],
-  "author": "SmallPict Engineering <support@tuxnoob.com>",
+  "author": "SmallPict Engineering <support@smallpict.app>",
   "license": "MIT",
-  "homepage": "https://smallpict.tuxnoob.com",
+  "homepage": "https://smallpict.app",
   "repository": {
     "type": "git",
     "url": "https://github.com/tuxnoob/smallpict-node.git"

@@ -1,6 +1,6 @@
 //! # SmallPict Rust SDK
 //!
-//! Official Rust client library for the [SmallPict Image Optimization API](https://smallpict.tuxnoob.com) —
+//! Official Rust client library for the [SmallPict Image Optimization API](https://smallpict.app) —
 //! next-gen image transcoding (AVIF, WebP), smart compression, Edge CDN delivery, and cache purging.
 //!
 //! ## Quick Start (Async)

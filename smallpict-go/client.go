@@ -34,7 +34,7 @@ func NewClient(opts ...Option) (*Client, error) {
 	c := &Client{
 		apiKey:       os.Getenv("SMALLPICT_API_KEY"),
 		secretKey:    os.Getenv("SMALLPICT_SECRET_KEY"),
-		baseURL:      "https://api.tuxnoob.com",
+		baseURL:      "https://api.smallpict.app",
 		timeout:      30 * time.Second,
 		maxRetries:   3,
 		fallbackMode: FallbackThrow,

@@ -31,7 +31,7 @@ RSpec.describe "SmallPict Models" do
       res = described_class.new(
         job_id: "job_123",
         status: "completed",
-        url: "https://cdn.smallpict.com/opt/hero.avif",
+        url: "https://cdn.smallpict.app/opt/hero.avif",
         format: "avif",
         original_size: 100_000,
         compressed_size: 15_000

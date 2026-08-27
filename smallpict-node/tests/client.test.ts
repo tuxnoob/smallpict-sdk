@@ -18,7 +18,7 @@ describe('SmallPictClient', () => {
       json: async () => ({
         job_id: 'job-123-abc',
         status: 'completed',
-        url: 'https://cdn.smallpict.com/opt/test.avif',
+        url: 'https://cdn.smallpict.app/opt/test.avif',
         format: 'avif',
         original_size: 100000,
         compressed_size: 15000,
@@ -40,12 +40,12 @@ describe('SmallPictClient', () => {
     });
 
     expect(result.status).toBe('completed');
-    expect(result.url).toBe('https://cdn.smallpict.com/opt/test.avif');
+    expect(result.url).toBe('https://cdn.smallpict.app/opt/test.avif');
     expect(result.savingsPercentage).toBe(85);
     expect(mockFetch).toHaveBeenCalledTimes(1);
 
     const callArgs = mockFetch.mock.calls[0]!;
-    expect(callArgs[0]).toBe('https://api.tuxnoob.com/v1/optimize');
+    expect(callArgs[0]).toBe('https://api.smallpict.app/v1/optimize');
     const headers = (callArgs[1] as RequestInit).headers as Record<string, string>;
     expect(headers['X-API-Key']).toBe('sp_live_testkey1234567890abcdef');
     expect(headers['X-Signature']).toBeDefined();
@@ -94,11 +94,11 @@ describe('SmallPictClient', () => {
       fetch: mockFetch,
     });
 
-    const res = await client.purgeCdn(['https://cdn.smallpict.com/opt/hero.avif']);
+    const res = await client.purgeCdn(['https://cdn.smallpict.app/opt/hero.avif']);
     expect(res.message).toBe('Purge job enqueued successfully');
 
     const callArgs = mockFetch.mock.calls[0]!;
-    expect(callArgs[0]).toBe('https://api.tuxnoob.com/v1/purge');
+    expect(callArgs[0]).toBe('https://api.smallpict.app/v1/purge');
   });
 
   it('validates key returning true on 200 and false on 401', async () => {

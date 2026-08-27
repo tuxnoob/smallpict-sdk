@@ -26,7 +26,7 @@ def test_sync_optimize_success():
             json={
                 "job_id": "job_sync_123",
                 "status": "completed",
-                "url": "https://cdn.smallpict.com/opt/banner.avif",
+                "url": "https://cdn.smallpict.app/opt/banner.avif",
                 "format": "avif",
                 "original_size": 200000,
                 "compressed_size": 25000,
@@ -52,7 +52,7 @@ def test_sync_optimize_success():
 
         assert result.job_id == "job_sync_123"
         assert result.status == "completed"
-        assert result.url == "https://cdn.smallpict.com/opt/banner.avif"
+        assert result.url == "https://cdn.smallpict.app/opt/banner.avif"
         assert result.savings_percentage == 87.5
 
 
@@ -83,14 +83,14 @@ def test_sync_purge_cdn():
     def mock_handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/v1/purge"
         payload = json.loads(request.content.decode("utf-8"))
-        assert payload["urls"] == ["https://cdn.smallpict.com/opt/banner.avif"]
+        assert payload["urls"] == ["https://cdn.smallpict.app/opt/banner.avif"]
         return httpx.Response(202, json={"message": "Purge accepted"})
 
     transport = httpx.MockTransport(mock_handler)
     http_client = httpx.Client(transport=transport)
 
     with SmallPictClient(api_key="sp_live_test", http_client=http_client) as client:
-        res = client.purge_cdn("https://cdn.smallpict.com/opt/banner.avif")
+        res = client.purge_cdn("https://cdn.smallpict.app/opt/banner.avif")
         assert res.message == "Purge accepted"
 
 
