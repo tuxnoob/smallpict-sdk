@@ -113,61 +113,63 @@ module SmallPict
 
       while attempt <= @max_retries
         attempt += 1
-        timestamp = Time.now.to_i.to_s
+        begin
+          timestamp = Time.now.to_i.to_s
 
-        headers = {
-          "Accept"     => "application/json",
-          "X-API-Key"  => @api_key
-        }
-        headers["Content-Type"] = "application/json" if body_str
+          headers = {
+            "Accept"     => "application/json",
+            "X-API-Key"  => @api_key
+          }
+          headers["Content-Type"] = "application/json" if body_str
 
-        if @secret_key
-          string_to_sign = Crypto.build_string_to_sign(method, clean_path, timestamp, body_hash)
-          signature = Crypto.hmac_sha256_hex(@secret_key, string_to_sign)
-          headers["X-Timestamp"] = timestamp
-          headers["X-Signature"] = signature
-        else
-          headers["Authorization"] = "Bearer #{@api_key}"
-        end
+          if @secret_key
+            string_to_sign = Crypto.build_string_to_sign(method, clean_path, timestamp, body_hash)
+            signature = Crypto.hmac_sha256_hex(@secret_key, string_to_sign)
+            headers["X-Timestamp"] = timestamp
+            headers["X-Signature"] = signature
+          else
+            headers["Authorization"] = "Bearer #{@api_key}"
+          end
 
-        if %i[post patch delete].include?(method.to_s.downcase.to_sym)
-          headers["Idempotency-Key"] = idempotency_key || SecureRandom.uuid
-        end
+          if %i[post patch delete].include?(method.to_s.downcase.to_sym)
+            headers["Idempotency-Key"] = idempotency_key || SecureRandom.uuid
+          end
 
-        response = connection.send(method.to_s.downcase.to_sym, url) do |req|
-          req.headers = headers
-          req.body = body_str if body_str
-        end
+          response = connection.send(method.to_s.downcase.to_sym, url) do |req|
+            req.headers = headers
+            req.body = body_str if body_str
+          end
 
-        status = response.status
-        request_id = response.headers["x-request-id"]
-        retry_after = response.headers["retry-after"]&.to_i
+          status = response.status
+          request_id = response.headers["x-request-id"]
+          retry_after = response.headers["retry-after"]&.to_i
 
-        if status == 429 || (status >= 500 && status <= 504)
+          if status == 429 || (status >= 500 && status <= 504)
+            if attempt <= @max_retries
+              delay = base_delay * (2**(attempt - 1))
+              delay = retry_after if retry_after && retry_after.positive?
+              jitter = rand(0..100) / 1000.0
+              sleep(delay + jitter)
+              next
+            end
+          end
+
+          parsed = parse_body(response.body)
+
+          if status < 200 || status >= 300
+            handle_error_response(status, parsed, request_id, retry_after)
+          end
+
+          return parsed
+        rescue Faraday::TimeoutError => e
+          raise TimeoutError, e.message
+        rescue Faraday::ConnectionFailed => e
           if attempt <= @max_retries
-            delay = base_delay * (2**(attempt - 1))
-            delay = retry_after if retry_after && retry_after.positive?
-            jitter = rand(0..100) / 1000.0
-            sleep(delay + jitter)
+            sleep(base_delay * (2**(attempt - 1)))
             next
           end
+          raise NetworkError, e.message
         end
-
-        parsed = parse_body(response.body)
-
-        if status < 200 || status >= 300
-          handle_error_response(status, parsed, request_id, retry_after)
-        end
-
-        return parsed
-      rescue Faraday::TimeoutError => e
-        raise TimeoutError.new(e.message)
-      rescue Faraday::ConnectionFailed => e
-        if attempt <= @max_retries
-          sleep(base_delay * (2**(attempt - 1)))
-          retry
-        end
-        raise NetworkError.new(e.message)
       end
 
       raise TimeoutError, "Request failed after maximum retry attempts"
