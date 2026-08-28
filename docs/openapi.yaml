@@ -174,8 +174,8 @@ paths:
             example:
               purge_type: "url"
               urls:
-                - "https://cdn.smallpict.app/images/hero-banner.avif"
-                - "https://cdn.smallpict.app/images/logo.webp"
+                - "https://cdn.smallpict.com/images/hero-banner.avif"
+                - "https://cdn.smallpict.com/images/logo.webp"
       responses:
         '202':
           description: Purge request accepted and enqueued for asynchronous edge propagation
@@ -259,6 +259,131 @@ paths:
                 $ref: '#/components/schemas/VerifyOTPResponse'
         '400':
           $ref: '#/components/responses/400BadRequest'
+
+  /customer/entitlements:
+    get:
+      summary: Retrieve Customer Product Entitlements & Navigation
+      description: |
+        Returns the single server-authoritative source of truth for active product states,
+        feature toggles (WordPress vs API/SDK), grace periods, and dynamic dashboard menus.
+      operationId: getCustomerEntitlements
+      tags:
+        - Entitlements & Lifecycle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Entitlements and dynamic menu structure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      email: { type: string }
+                  products:
+                    type: object
+                    properties:
+                      wordpress:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [active, past_due, non_renewing, suspended, cancelled, free] }
+                          tier: { type: string }
+                          grace_period_ends_at: { type: string, format: date-time }
+                          features:
+                            type: object
+                            properties:
+                              dashboard_assets: { type: boolean }
+                              wordpress_plugin: { type: boolean }
+                              api_key_limit: { type: integer }
+                              cloud_storage: { type: boolean }
+                              managed_cdn: { type: boolean }
+                      api_sdk:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [active, past_due, non_renewing, suspended, cancelled, sandbox] }
+                          tier: { type: string }
+                          grace_period_ends_at: { type: string, format: date-time }
+                          deletion_scheduled_at: { type: string, format: date-time }
+                          features:
+                            type: object
+                            properties:
+                              sandbox_testing: { type: boolean }
+                              cdn_setup: { type: boolean }
+                              production_api: { type: boolean }
+                              byo_cdn: { type: boolean }
+                              managed_cdn: { type: boolean }
+                  dashboard:
+                    type: object
+                    properties:
+                      menu:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            label: { type: string }
+                            path: { type: string }
+                            visible: { type: boolean }
+                            enabled: { type: boolean }
+                            badge: { type: string }
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+
+  /customer/sandbox:
+    get:
+      summary: Retrieve Permanent API/SDK Evaluation Sandbox
+      description: Returns sandbox rate limits and current monthly usage consumption.
+      operationId: getCustomerSandbox
+      tags:
+        - Entitlements & Lifecycle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Sandbox status and limits
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+
+  /subscriptions/{product}/cancel:
+    post:
+      summary: Cancel Product Subscription with 7-Day Grace Period
+      description: |
+        Cancels a specific product subscription ('wordpress' or 'api_sdk') and initiates
+        a 7-day grace period with scheduled reminders before suspension or downgrade.
+      operationId: cancelProductSubscription
+      tags:
+        - Subscriptions
+      parameters:
+        - name: product
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [wordpress, api_sdk]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Subscription cancelled with grace period details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  grace_period_ends_at: { type: string, format: date-time }
+                  product: { type: string }
+                  status: { type: string, example: "non_renewing" }
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
 
 components:
   securitySchemes:
@@ -382,7 +507,7 @@ components:
           type: string
           format: uri
           description: Permanent Edge CDN URL of the optimized asset
-          example: "https://cdn.smallpict.app/opt/hero-image.avif"
+          example: "https://cdn.smallpict.com/opt/hero-image.avif"
         format:
           type: string
           example: "avif"

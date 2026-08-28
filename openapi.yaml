@@ -3,6 +3,12 @@ info:
   title: SmallPict Image Optimization API
   description: |
     Production REST API for high-performance cloud image optimization, format transcoding (WebP, AVIF, PNG, JPEG), CDN edge invalidation, and real-time quota tracking.
+    
+    ### Authentication Standard (HMAC-SHA256)
+    All SDK requests must include HMAC-SHA256 signature headers to guarantee payload integrity and client authentication:
+    - `X-API-Key`: Customer API key (`sp_live_...`, `sp_test_...`, `sp_sdk_...`, or `sp_wp_...`)
+    - `X-Timestamp`: Current UTC Unix timestamp in seconds (valid within a 5-minute drift window)
+    - `X-Signature`: Hex-encoded HMAC-SHA256 signature computed as `hex(HMAC_SHA256(SecretKey, Method + "\n" + Path + "\n" + Timestamp + "\n" + BodyHash))`
   version: 1.1.9
   contact:
     name: SmallPict Engineering
@@ -16,25 +22,710 @@ servers:
     description: Production API Server
   - url: https://api.smolpict.com/v1
     description: High-Availability Edge Secondary
+  - url: http://localhost:8080/v1
+    description: Local Development & Mock Server
+
+security:
+  - HMACAuth: []
+  - BearerAuth: []
 
 paths:
   /optimize:
     post:
       summary: Optimize and Transcode Image
+      description: |
+        Compresses, resizes, and converts images to next-generation formats (AVIF, WebP, PNG, JPEG).
+        Supports both JSON payload with pre-signed S3 upload and direct multipart/binary streams.
       operationId: optimizeImage
+      tags:
+        - Image Optimization
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimizeRequest'
+            example:
+              filename: "hero-banner.jpg"
+              mime_type: "image/jpeg"
+              filesize: 1654200
+              options:
+                format: "avif"
+                quality: 80
+                max_width: 1920
+                lossless: false
+                strip_metadata: true
+      responses:
+        '200':
+          description: Optimization initiated or synchronous result returned
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/X-Request-ID'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizeResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '402':
+          $ref: '#/components/responses/402QuotaExceeded'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '429':
+          $ref: '#/components/responses/429RateLimited'
+        '500':
+          $ref: '#/components/responses/500InternalError'
+
   /convert:
     post:
       summary: Convert Image (Alias for /optimize)
+      description: Direct alias for `/v1/optimize`.
       operationId: convertImage
+      tags:
+        - Image Optimization
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/paths/~1optimize/post/requestBody'
+      responses:
+        '200':
+          $ref: '#/paths/~1optimize/post/responses/200'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '402':
+          $ref: '#/components/responses/402QuotaExceeded'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '429':
+          $ref: '#/components/responses/429RateLimited'
+        '500':
+          $ref: '#/components/responses/500InternalError'
+
   /optimize/status:
     get:
       summary: Poll Asynchronous Job Status
+      description: Check the processing status and retrieve CDN URL for an async conversion job.
       operationId: getJobStatus
+      tags:
+        - Image Optimization
+      parameters:
+        - name: job_id
+          in: query
+          required: true
+          description: The unique Job UUID returned by the conversion request
+          schema:
+            type: string
+            format: uuid
+            example: "7f4c3a10-e592-4f81-9b16-419b22b25c34"
+      responses:
+        '200':
+          description: Current job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
   /quota:
     get:
       summary: Get Real-Time Storage & CDN Quota
+      description: Retrieve current monthly processing usage, allocated storage quota, and CDN egress bandwidth.
       operationId: getQuota
+      tags:
+        - Usage & Billing
+      responses:
+        '200':
+          description: Quota and usage metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotaResponse'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+
   /purge:
     post:
       summary: Purge CDN Edge Cache
+      description: Invalidate CDN cache for specific asset URLs or all assets across edge points of presence.
       operationId: purgeCDN
+      tags:
+        - CDN Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurgeRequest'
+            example:
+              purge_type: "url"
+              urls:
+                - "https://cdn.smallpict.com/images/hero-banner.avif"
+                - "https://cdn.smallpict.com/images/logo.webp"
+      responses:
+        '202':
+          description: Purge request accepted and enqueued for asynchronous edge propagation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurgeResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+
+  /plugin/convert:
+    post:
+      summary: WordPress Plugin Convert Endpoint (Legacy Compatibility)
+      operationId: pluginConvert
+      tags:
+        - WordPress Integration
+      requestBody:
+        $ref: '#/paths/~1optimize/post/requestBody'
+      responses:
+        '200':
+          $ref: '#/paths/~1optimize/post/responses/200'
+
+  /plugin/quota:
+    get:
+      summary: WordPress Plugin Quota Endpoint (Legacy Compatibility)
+      operationId: pluginQuota
+      tags:
+        - WordPress Integration
+      responses:
+        '200':
+          $ref: '#/paths/~1quota/get/responses/200'
+
+  /plugin/auth/request-otp:
+    post:
+      summary: Request WordPress Connection OTP
+      description: Generates and emails a 6-digit one-time passcode to pair a WordPress site with a customer account.
+      operationId: requestOTP
+      tags:
+        - WordPress Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestOTPRequest'
+      responses:
+        '200':
+          description: OTP dispatched to customer email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OTPResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+
+  /plugin/auth/verify-otp:
+    post:
+      summary: Verify OTP & Return Site API Key
+      description: Validates 6-digit OTP and generates an active WordPress scoped API key (`sp_wp_...`).
+      operationId: verifyOTP
+      tags:
+        - WordPress Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyOTPResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+
+  /customer/entitlements:
+    get:
+      summary: Retrieve Customer Product Entitlements & Navigation
+      description: |
+        Returns the single server-authoritative source of truth for active product states,
+        feature toggles (WordPress vs API/SDK), grace periods, and dynamic dashboard menus.
+      operationId: getCustomerEntitlements
+      tags:
+        - Entitlements & Lifecycle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Entitlements and dynamic menu structure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      email: { type: string }
+                  products:
+                    type: object
+                    properties:
+                      wordpress:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [active, past_due, non_renewing, suspended, cancelled, free] }
+                          tier: { type: string }
+                          grace_period_ends_at: { type: string, format: date-time }
+                          features:
+                            type: object
+                            properties:
+                              dashboard_assets: { type: boolean }
+                              wordpress_plugin: { type: boolean }
+                              api_key_limit: { type: integer }
+                              cloud_storage: { type: boolean }
+                              managed_cdn: { type: boolean }
+                      api_sdk:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [active, past_due, non_renewing, suspended, cancelled, sandbox] }
+                          tier: { type: string }
+                          grace_period_ends_at: { type: string, format: date-time }
+                          deletion_scheduled_at: { type: string, format: date-time }
+                          features:
+                            type: object
+                            properties:
+                              sandbox_testing: { type: boolean }
+                              cdn_setup: { type: boolean }
+                              production_api: { type: boolean }
+                              byo_cdn: { type: boolean }
+                              managed_cdn: { type: boolean }
+                  dashboard:
+                    type: object
+                    properties:
+                      menu:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            label: { type: string }
+                            path: { type: string }
+                            visible: { type: boolean }
+                            enabled: { type: boolean }
+                            badge: { type: string }
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+
+  /customer/sandbox:
+    get:
+      summary: Retrieve Permanent API/SDK Evaluation Sandbox
+      description: Returns sandbox rate limits and current monthly usage consumption.
+      operationId: getCustomerSandbox
+      tags:
+        - Entitlements & Lifecycle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Sandbox status and limits
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+
+  /subscriptions/{product}/cancel:
+    post:
+      summary: Cancel Product Subscription with 7-Day Grace Period
+      description: |
+        Cancels a specific product subscription ('wordpress' or 'api_sdk') and initiates
+        a 7-day grace period with scheduled reminders before suspension or downgrade.
+      operationId: cancelProductSubscription
+      tags:
+        - Subscriptions
+      parameters:
+        - name: product
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [wordpress, api_sdk]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Subscription cancelled with grace period details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  grace_period_ends_at: { type: string, format: date-time }
+                  product: { type: string }
+                  status: { type: string, example: "non_renewing" }
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
+components:
+  securitySchemes:
+    HMACAuth:
+      type: apiKey
+      name: X-API-Key
+      in: header
+      description: |
+        Customer API Key with `X-Timestamp` and `X-Signature` HMAC headers.
+        Key prefixes:
+        - `sp_live_...`: Production SDK
+        - `sp_test_...`: Logical Sandbox SDK
+        - `sp_sdk_...`: General Developer SDK
+        - `sp_wp_...`: WordPress Plugin
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Standard HTTP Bearer Token format for SDK client initialization.
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Unique UUID string to prevent duplicate processing on network retries.
+      schema:
+        type: string
+        format: uuid
+        example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+
+  headers:
+    X-Request-ID:
+      description: Unique tracing identifier for request debugging.
+      schema:
+        type: string
+        example: "req_01HPX7YZ8N9Q"
+    X-RateLimit-Limit:
+      description: Maximum requests permitted within the rolling rate window.
+      schema:
+        type: integer
+        example: 600
+    X-RateLimit-Remaining:
+      description: Remaining quota points in the active window.
+      schema:
+        type: integer
+        example: 582
+    X-RateLimit-Reset:
+      description: Unix timestamp when the rate limit window resets.
+      schema:
+        type: integer
+        example: 1716301260
+
+  schemas:
+    OptimizeRequest:
+      type: object
+      required:
+        - filename
+        - mime_type
+        - filesize
+      properties:
+        filename:
+          type: string
+          description: Original filename of the visual asset
+          example: "hero-image.png"
+        mime_type:
+          type: string
+          description: MIME type of the input file
+          enum: [image/jpeg, image/png, image/webp, image/avif, image/gif, image/tiff, image/svg+xml]
+          example: "image/png"
+        filesize:
+          type: integer
+          description: Exact size in bytes of the original asset
+          example: 2450000
+        options:
+          type: object
+          properties:
+            format:
+              type: string
+              enum: [auto, avif, webp, jpeg, png]
+              default: auto
+              description: Target output format
+            quality:
+              type: integer
+              minimum: 1
+              maximum: 100
+              default: 80
+              description: Compression quality level
+            max_width:
+              type: integer
+              description: Target bounding width constraint
+              example: 1920
+            max_height:
+              type: integer
+              description: Target bounding height constraint
+              example: 1080
+            lossless:
+              type: boolean
+              default: false
+              description: Enable lossless compression mode
+            strip_metadata:
+              type: boolean
+              default: true
+              description: Strip EXIF, GPS, and camera metadata
+
+    OptimizeResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          example: "7f4c3a10-e592-4f81-9b16-419b22b25c34"
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+          example: "completed"
+        upload_url:
+          type: string
+          format: uri
+          description: Pre-signed S3 upload URL when streaming is required
+        url:
+          type: string
+          format: uri
+          description: Permanent Edge CDN URL of the optimized asset
+          example: "https://cdn.smallpict.com/opt/hero-image.avif"
+        format:
+          type: string
+          example: "avif"
+        original_size:
+          type: integer
+          example: 2450000
+        compressed_size:
+          type: integer
+          example: 285000
+        bytes_saved:
+          type: integer
+          example: 2165000
+        savings_percentage:
+          type: number
+          example: 88.36
+
+    JobStatusResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+          example: "completed"
+        url:
+          type: string
+          format: uri
+        format:
+          type: string
+        bytes_saved:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+
+    QuotaResponse:
+      type: object
+      properties:
+        plan:
+          type: string
+          example: "api_velocity"
+        bytes_used:
+          type: integer
+          description: Total storage bytes consumed in the current monthly cycle
+          example: 1258291200
+        quota_limit:
+          type: integer
+          description: Maximum storage quota in bytes
+          example: 10737418240
+        quota_percentage:
+          type: number
+          example: 11.72
+        cdn_egress_used_bytes:
+          type: integer
+          example: 3450000000
+        cdn_egress_quota_bytes:
+          type: integer
+          example: 53687091200
+        active_keys_count:
+          type: integer
+          example: 2
+        active_sites_count:
+          type: integer
+          example: 3
+
+    PurgeRequest:
+      type: object
+      required:
+        - purge_type
+      properties:
+        purge_type:
+          type: string
+          enum: [url, all]
+          default: url
+        urls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Specific asset URLs to purge from edge POPs
+
+    PurgeResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Purge job enqueued successfully"
+
+    RequestOTPRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "developer@example.com"
+        site_url:
+          type: string
+          format: uri
+          example: "https://my-wordpress-store.com"
+
+    VerifyOTPRequest:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+        otp:
+          type: string
+          example: "849201"
+        site_url:
+          type: string
+          format: uri
+
+    OTPResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "OTP sent to email address"
+
+    VerifyOTPResponse:
+      type: object
+      properties:
+        api_key:
+          type: string
+          example: "sp_wp_a8f92b7c4d1e0f3..."
+        secret_key:
+          type: string
+          example: "sec_99a812b..."
+        plan:
+          type: string
+          example: "wp_starter"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_FAILED
+                - UNAUTHORIZED
+                - FORBIDDEN
+                - NOT_FOUND
+                - QUOTA_EXCEEDED
+                - OVERAGE_EXCEEDED
+                - RATE_LIMIT_EXCEEDED
+                - INTERNAL_ERROR
+              example: "QUOTA_EXCEEDED"
+            message:
+              type: string
+              example: "Monthly image processing quota limit reached"
+            details:
+              type: object
+              additionalProperties: true
+
+  responses:
+    400BadRequest:
+      description: Invalid request body, malformed JSON, or missing parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    401Unauthorized:
+      description: Missing, invalid, expired, or signature-mismatched API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    402QuotaExceeded:
+      description: Monthly storage or bandwidth quota exhausted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    403Forbidden:
+      description: Scope permission mismatch or revoked credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    404NotFound:
+      description: Requested resource or job ID does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    429RateLimited:
+      description: Request rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    500InternalError:
+      description: Internal backend server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
