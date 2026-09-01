@@ -18,7 +18,7 @@ Welcome to the **SmallPict SDK Ecosystem** — official developer tools for inte
 | **Go** | [`smallpict-go/`](smallpict-go/) | [`github.com/tuxnoob/smallpict-go`](https://pkg.go.dev/github.com/tuxnoob/smallpict-go) | [pkg.go.dev](https://pkg.go.dev/github.com/tuxnoob/smallpict-go) | [![Go Reference](https://pkg.go.dev/badge/github.com/tuxnoob/smallpict-go.svg)](https://pkg.go.dev/github.com/tuxnoob/smallpict-go) |
 | **Rust** | [`smallpict-rust/`](smallpict-rust/) | [`smallpict`](https://crates.io/crates/smallpict) | [crates.io](https://crates.io/crates/smallpict) | [![crates.io](https://img.shields.io/crates/v/smallpict.svg)](https://crates.io/crates/smallpict) |
 | **Ruby** | [`smallpict-ruby/`](smallpict-ruby/) | [`smallpict`](https://rubygems.org/gems/smallpict) | [RubyGems](https://rubygems.org/gems/smallpict) | [![Gem Version](https://badge.fury.io/rb/smallpict.svg)](https://badge.fury.io/rb/smallpict) |
-| **Java / Kotlin** | [`smallpict-java/`](smallpict-java/) | [`com.smallpict:smallpict-java`](https://search.maven.org) | [Maven Central](https://search.maven.org) | [![Maven Central](https://img.shields.io/maven-central/v/com.smallpict/smallpict-java.svg)](https://search.maven.org) |
+| **Java / Kotlin** | [`smallpict-java/`](https://github.com/tuxnoob/smallpict-java) | [`io.github.tuxnoob:smallpict-java`](https://central.sonatype.com) | [Maven Central](https://central.sonatype.com) | [![Maven Central](https://img.shields.io/maven-central/v/io.github.tuxnoob/smallpict-java.svg)](https://central.sonatype.com) |
 
 ---
 
