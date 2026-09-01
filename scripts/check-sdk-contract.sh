@@ -61,6 +61,9 @@ echo "--------------------------------------------------"
 for entry in "${SDKS[@]}"; do
   IFS=":" read -r dir registry package_name <<< "${entry}"
   TARGET_PATH="${ROOT_DIR}/${dir}"
+  if [ ! -d "${TARGET_PATH}" ] && [ -d "${ROOT_DIR}/../${dir}" ]; then
+    TARGET_PATH="${ROOT_DIR}/../${dir}"
+  fi
 
   if [ ! -d "${TARGET_PATH}" ]; then
     echo "❌ Missing SDK directory: ${TARGET_PATH}"
