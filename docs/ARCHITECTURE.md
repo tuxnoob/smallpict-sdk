@@ -33,11 +33,11 @@ Regardless of language naming conventions (camelCase vs snake_case vs PascalCase
 
 ## 🛡️ Zero-Leak Credential Redaction
 
-All SDKs implement strict regex-based credential masking to ensure customer API keys (`sp_live_...`, `sp_test_...`, `sp_sdk_...`) and HMAC secret keys (`sec_...`) never appear in plaintext in exception messages, string formatting (`toString()`, `__repr__`, `inspect`), or debugger stack traces.
+All SDKs implement strict regex-based credential masking to ensure customer API keys (`sp_sdk_...`, `sp_wp_...`, `sp_test_...`) and HMAC secret keys (`sec_...`) never appear in plaintext in exception messages, string formatting (`toString()`, `__repr__`, `inspect`), or debugger stack traces.
 
 ```text
-Input:  "Request failed with key sp_live_1234567890abcdef1234567890abcdef and secret sec_secret123"
-Output: "Request failed with key sp_live_12...cdef and secret ***REDACTED***"
+Input:  "Request failed with key sp_sdk_1234567890abcdef1234567890abcdef and secret sec_secret123"
+Output: "Request failed with key sp_sdk_12...cdef and secret ***REDACTED***"
 ```
 
 ---

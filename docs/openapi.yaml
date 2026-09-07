@@ -6,7 +6,7 @@ info:
     
     ### Authentication Standard (HMAC-SHA256)
     All SDK requests must include HMAC-SHA256 signature headers to guarantee payload integrity and client authentication:
-    - `X-API-Key`: Customer API key (`sp_live_...`, `sp_test_...`, `sp_sdk_...`, or `sp_wp_...`)
+    - `X-API-Key`: Customer API key (`sp_wp_...`, `sp_test_...`, or `sp_sdk_...`)
     - `X-Timestamp`: Current UTC Unix timestamp in seconds (valid within a 5-minute drift window)
     - `X-Signature`: Hex-encoded HMAC-SHA256 signature computed as `hex(HMAC_SHA256(SecretKey, Method + "\n" + Path + "\n" + Timestamp + "\n" + BodyHash))`
   version: 1.1.9
@@ -394,9 +394,8 @@ components:
       description: |
         Customer API Key with `X-Timestamp` and `X-Signature` HMAC headers.
         Key prefixes:
-        - `sp_live_...`: Production SDK
-        - `sp_test_...`: Logical Sandbox SDK
-        - `sp_sdk_...`: General Developer SDK
+        - `sp_sdk_...`: Production Developer SDK
+        - `sp_test_...`: Sandbox / Evaluation SDK
         - `sp_wp_...`: WordPress Plugin
     BearerAuth:
       type: http

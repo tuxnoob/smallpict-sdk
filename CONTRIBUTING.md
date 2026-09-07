@@ -19,7 +19,7 @@ Thank you for contributing to the SmallPict SDK ecosystem! All official SDKs sha
 ## 🔒 Security & Code Quality Standards
 
 1. **Secret & Payload Redaction:**
-   - Never print API keys (`sp_live_...`, `sp_test_...`, `sp_wp_...`), secret keys, or authorization headers in log outputs, exceptions, or error details.
+   - Never print API keys (`sp_sdk_...`, `sp_test_...`, `sp_wp_...`), secret keys, or authorization headers in log outputs, exceptions, or error details.
    - Never print raw image binary buffers in exception traces.
 2. **Zero-Copy Streaming:**
    - Always leverage language-native streaming abstractions (`io.Reader` in Go, `ReadableStream` in Node.js, `bytes::Bytes` in Rust, `httpx` async streams in Python) to prevent unbounded memory allocation.

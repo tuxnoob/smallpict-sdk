@@ -24,7 +24,7 @@ Please report the vulnerability privately:
    {
      "error": {
        "code": "UNAUTHORIZED",
-       "message": "Invalid API Key signature. Key prefix: sp_live_a8f9...",
+       "message": "Invalid API Key signature. Key prefix: sp_sdk_a8f9...",
        "request_id": "req_01HPX7YZ8N9Q"
      }
    }

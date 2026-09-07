@@ -26,7 +26,7 @@ const result = await client.optimize(fileStream, {
 ```python
 from smallpict import SmallPictClient
 
-client = SmallPictClient(api_key="sp_live_...")
+client = SmallPictClient(api_key="sp_sdk_...")
 
 with open("huge-photo.jpg", "rb") as f:
     result = client.optimize(f, options={"filename": "huge-photo.jpg", "format": "avif"})
@@ -56,7 +56,7 @@ func main() {
 
 ### 4. Java (`InputStream` Pipe)
 ```java
-SmallPictClient client = new SmallPictClient("sp_live_...");
+SmallPictClient client = new SmallPictClient("sp_sdk_...");
 
 try (InputStream stream = new BufferedInputStream(new FileInputStream("huge-photo.jpg"))) {
     OptimizeResult result = client.optimize(stream, OptimizeOptions.builder()
